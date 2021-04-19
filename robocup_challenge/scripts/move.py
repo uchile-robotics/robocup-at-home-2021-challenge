@@ -4,8 +4,6 @@
 import rospy
 import sys
 import math
-import smach
-import smach_ros
 import numpy as np
 
 rospy.init_node('move')
