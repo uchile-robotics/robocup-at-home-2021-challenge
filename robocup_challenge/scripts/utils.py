@@ -92,7 +92,6 @@ def quaternion_from_euler(roll, pitch, yaw):
 # 自律移動のゴールを送信するクライアントを作成
 navclient = actionlib.SimpleActionClient('/move_base', MoveBaseAction)
 
-
 def move_base_goal(x, y, theta):
     u"""台車の自律移動のゴールを指定する関数
 
