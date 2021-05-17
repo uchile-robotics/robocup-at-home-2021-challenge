@@ -14,6 +14,7 @@ from geometry_msgs.msg import PoseStamped, Quaternion, TransformStamped, Twist
 
 import smach_ros
 
+from utils_hb import Move
 import utils
 
 import look_object
@@ -37,37 +38,10 @@ class PanHead(smach.State):
         rospy.sleep(3.)
         return 'succeeded'
 
-class Move(smach.State):
+class MoveSM(smach.State):
     def __init__(self, place):
         smach.State.__init__(self, outcomes=["succeeded"])
         self.place = place
-        self.navclient = actionlib.SimpleActionClient('/move_base', MoveBaseAction)
-        self.navclient.wait_for_server()
-
-    def quaternion_from_euler(self, roll, pitch, yaw):
-
-        # ロール、ピッチ、ヨーの順番で回転
-        q = tf.transformations.quaternion_from_euler(roll / 180.0 * math.pi,
-                                                    pitch / 180.0 * math.pi,
-                                                    yaw / 180.0 * math.pi, 'rxyz')
-        return Quaternion(q[0], q[1], q[2], q[3])
-
-    def move_base_goal(self, x, y, theta):
-
-        goal = MoveBaseGoal()
-
-        goal.target_pose.header.frame_id = "map"
-
-        goal.target_pose.pose.position.x = x
-        goal.target_pose.pose.position.y = y
-
-        goal.target_pose.pose.orientation = self.quaternion_from_euler(0, 0, theta)
-
-        self.navclient.send_goal(goal)
-        self.navclient.wait_for_result()
-        state = self.navclient.get_state()
-
-        return True if state == 3 else False
 
     def execute(self,userdata):
 
@@ -75,14 +49,20 @@ class Move(smach.State):
         
         if self.place == 'PICKUP':
             try:
-                self.move_base_goal(0.8, 0.9, 90)
+                m = Move()
+                m.set_pose(0.8, 0.9, 90)
+                #m.get_pose()
+                m.go()
             except:
                 rospy.logerr('fail to move')
                 sys.exit()
 
         if self.place == 'DROP':
             try:
-                self.move_base_goal(1.8, -0.1, -90)
+                m = Move()
+                m.set_pose(1.8, -0.1, -90)
+                #m.get_pose()
+                m.go()
             except:
                 rospy.logerr('fail to move')
                 sys.exit()
@@ -111,7 +91,7 @@ def getInstance():
             }
         )
 
-        smach.StateMachine.add('GO_TO_PICKUP', Move('PICKUP'),
+        smach.StateMachine.add('GO_TO_PICKUP', MoveSM('PICKUP'),
             transitions={
                 'succeeded': 'LOOK_OBJECT'                
             }
@@ -124,7 +104,7 @@ def getInstance():
             }
         )
 
-        smach.StateMachine.add('GO_TO_DROP', Move('DROP'),
+        smach.StateMachine.add('GO_TO_DROP', MoveSM('DROP'),
             transitions={
                 'succeeded': 'PAN_HEAD'                
             }

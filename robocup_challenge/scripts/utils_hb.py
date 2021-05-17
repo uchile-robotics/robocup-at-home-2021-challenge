@@ -1,6 +1,5 @@
 #!/usr/bin/env python
-# fish
-#import roslib; roslib.load_manifest('smach_tutorials')
+
 import rospy
 import actionlib
 import roslib
@@ -60,24 +59,3 @@ class Move():
                 rospy.loginfo("Goal execution done!")
         except rospy.ROSInterruptException:
             rospy.loginfo("Navigation test finished.")
-
-
-'''
-def main():
-    rospy.init_node('fish')
-    m = Move()
-    m.set_pose(1, 3, 60)
-    #m.get_pose()
-    m.go()
-
-if __name__ == '__main__':
-    main()
-'''
-'''
-if __name__ == '__main__':
-    rospy.init_node('fish')
-    m = Move()
-    m.set_pose(1, 3, 60)
-    #m.get_pose()
-    m.go()
-'''
