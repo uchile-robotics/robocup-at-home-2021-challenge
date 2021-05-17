@@ -8,6 +8,7 @@ import tf
 from tf.transformations import euler_from_quaternion, quaternion_from_euler
 import math
 from geometry_msgs.msg import PoseStamped, Quaternion, TransformStamped, Twist
+import moveit_commander
 
 class Move():
     def __init__(self):
@@ -59,3 +60,38 @@ class Move():
                 rospy.loginfo("Goal execution done!")
         except rospy.ROSInterruptException:
             rospy.loginfo("Navigation test finished.")
+
+
+head = moveit_commander.MoveGroupCommander("head")
+
+
+def move_head_tilt(v):
+
+    head.set_joint_value_target("head_tilt_joint", v)
+    return head.go()
+    
+
+arm = moveit_commander.MoveGroupCommander('arm')
+
+
+def move_arm_neutral():
+
+    arm.set_named_target('neutral')
+    return arm.go()
+
+
+def move_arm_init():
+
+    arm.set_named_target('go')
+    return arm.go()
+
+base_vel_pub = rospy.Publisher('/hsrb/command_velocity', Twist, queue_size=1)
+
+
+def move_base_vel(vx, vy, vw):
+
+    twist = Twist()
+    twist.linear.x = vx
+    twist.linear.y = vy
+    twist.angular.z = vw / 180.0 * math.pi 
+    base_vel_pub.publish(twist)  

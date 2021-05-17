@@ -14,8 +14,7 @@ from geometry_msgs.msg import PoseStamped, Quaternion, TransformStamped, Twist
 
 import smach_ros
 
-from utils_hb import Move
-import utils
+import utils_hb
 
 import look_object
 
@@ -23,18 +22,18 @@ class Setup(smach.State):
     def __init__(self):
         smach.State.__init__(self, outcomes=["succeeded", "aborted"])
     def execute(self,userdata):
-        utils.move_arm_init()
+        utils_hb.move_arm_init()
         return 'succeeded'
 
 class PanHead(smach.State):
     def __init__(self):
         smach.State.__init__(self, outcomes=["succeeded"])
     def execute(self,userdata):
-        utils.move_head_tilt(-0.8)
+        utils_hb.move_head_tilt(-0.8)
         rospy.sleep(1.)
-        utils.move_base_vel(0 , 0, 60)
+        utils_hb.move_base_vel(0 , 0, 60)
         rospy.sleep(3.)
-        utils.move_base_vel(0 , 0, -90)
+        utils_hb.move_base_vel(0 , 0, -90)
         rospy.sleep(3.)
         return 'succeeded'
 
@@ -49,7 +48,7 @@ class MoveSM(smach.State):
         
         if self.place == 'PICKUP':
             try:
-                m = Move()
+                m = utils_hb.Move()
                 m.set_pose(0.8, 0.9, 90)
                 #m.get_pose()
                 m.go()
@@ -59,7 +58,7 @@ class MoveSM(smach.State):
 
         if self.place == 'DROP':
             try:
-                m = Move()
+                m = utils_hb.Move()
                 m.set_pose(1.8, -0.1, -90)
                 #m.get_pose()
                 m.go()

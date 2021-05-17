@@ -14,31 +14,31 @@ from geometry_msgs.msg import PoseStamped, Quaternion, TransformStamped, Twist
 
 import smach_ros
 
-import utils
+import utils_hb
 
 class LookTo(smach.State):
     def __init__(self):
         smach.State.__init__(self, outcomes=["succeeded"], io_keys=['counter'])
     def execute(self,userdata):
         if userdata.counter == 0:
-            utils.move_head_tilt(-0.8)
+            utils_hb.move_head_tilt(-0.8)
             userdata.counter += 1
         elif userdata.counter == 1:
-            utils.move_head_tilt(-0.4)
+            utils_hb.move_head_tilt(-0.4)
             userdata.counter += 1
         elif userdata.counter == 2:
-            utils.move_head_tilt(-0.8)
-            utils.move_base_vel(0 , 0, 60)
+            utils_hb.move_head_tilt(-0.8)
+            utils_hb.move_base_vel(0 , 0, 60)
             userdata.counter += 1
         elif userdata.counter == 3:
-            utils.move_head_tilt(-0.4)
+            utils_hb.move_head_tilt(-0.4)
             userdata.counter += 1
         elif userdata.counter == 4:
-            utils.move_head_tilt(-0.8)
-            utils.move_base_vel(0 , 0, -90)
+            utils_hb.move_head_tilt(-0.8)
+            utils_hb.move_base_vel(0 , 0, -90)
             userdata.counter += 1
         elif userdata.counter == 5:
-            utils.move_head_tilt(-0.4)
+            utils_hb.move_head_tilt(-0.4)
             userdata.counter = 0
         return 'succeeded'
 
@@ -48,14 +48,35 @@ class FindObject(smach.State):
     def execute(self,userdata):
         print('Looking For Object')
         rospy.sleep(3.)
-        if userdata.counter == 0: return 'failed'
+        if userdata.counter == 0: return 'succeeded'
         return 'continue'
+
+class GetCloseObject(smach.State):
+    def __init__(self):
+        smach.State.__init__(self, outcomes=["succeeded"], input_keys=['pos'])
+
+    def execute(self,userdata):
+        print('Getting Close to Object')
+        try:
+            # se tiene que usar la pose obtenida por vision
+            grab_x = userdata.pos[0] 
+            grab_y = userdata.pos[1] - 0.1
+            m = utils_hb.Move()
+            m.set_pose(grab_x, grab_y, 90)
+            #m.get_pose()
+            m.go()
+            utils_hb.move_head_tilt(-0.8)
+            rospy.sleep(7.)
+        except:
+            rospy.logerr('fail to move')
+            sys.exit()
+        return 'succeeded'
 
 def getInstance():
 
     sm = smach.StateMachine(outcomes=['succeeded', 'failed'])
     sm.userdata.counter = 0
-    sm.userdata.pos = [0,0,0]
+    sm.userdata.pos = [1.5, 1.2, 90]
 
     with sm:
 
@@ -67,9 +88,15 @@ def getInstance():
 
         smach.StateMachine.add('FIND_OBJECT', FindObject(),
             transitions={
-                'succeeded': 'succeeded', 
+                'succeeded': 'GET_CLOSE', 
                 'failed': 'failed',
                 'continue': 'LOOK_TO'           
+            }
+        )
+
+        smach.StateMachine.add('GET_CLOSE', GetCloseObject(),
+            transitions={
+                'succeeded': 'succeeded'                
             }
         )
 
