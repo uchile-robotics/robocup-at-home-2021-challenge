@@ -17,6 +17,9 @@ RUN source /opt/ros/$ROS_DISTRO/setup.bash && \
     catkin_make install -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/opt/ros/$ROS_DISTRO -DCATKIN_ENABLE_TESTING=0 && \
     cd / && rm -r /bio_ik_ws
 
+# install libraries
+RUN apt-get install ros-melodic-smach
+
 # create workspace folder
 RUN mkdir -p /workspace/src
 
