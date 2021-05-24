@@ -18,7 +18,7 @@ RUN source /opt/ros/$ROS_DISTRO/setup.bash && \
     cd / && rm -r /bio_ik_ws
 
 # install libraries
-RUN apt-get install ros-melodic-smach
+RUN apt-get install -y ros-melodic-smach ros-melodic-smach-ros
 
 # create workspace folder
 RUN mkdir -p /workspace/src
