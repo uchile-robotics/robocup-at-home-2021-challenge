@@ -11,12 +11,20 @@ class Message_listener():
         self.data  = self
         self.sub = rospy.Subscriber("message", String, self.get_data)
 
-    def get_data(self,data):
+    def callback(self,data):
         self.data = data.data
+        #print(self.data)
+        return self.data
+
+    def get_data(self,data):
         print(self.data)
         return self.data
 
+def main(args):
+  obc = Message_listener()
+  rospy.init_node('Message_listener', anonymous=True)
+  obc.get_data()
+  print(type(obc.get_data()))
+
 if __name__ == '__main__':
-    rospy.init_node('simple_class', anonymous=True)
-    obc = Message_listener()
-    
+    main(sys.argv)
