@@ -28,7 +28,7 @@ class Move():
 
     def movebase_client(self):
 
-        client = actionlib.SimpleActionClient('move_base',MoveBaseAction)
+        client = actionlib.SimpleActionClient('/move_base', MoveBaseAction)
 
         client.wait_for_server()
 

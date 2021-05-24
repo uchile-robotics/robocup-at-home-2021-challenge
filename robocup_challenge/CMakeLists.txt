@@ -7,8 +7,6 @@ catkin_package(
 )
 
 install(PROGRAMS
-  scripts/utils.py
-  scripts/move.py
   scripts/utils_hb.py
   scripts/clean_up.py
   scripts/look_object.py
