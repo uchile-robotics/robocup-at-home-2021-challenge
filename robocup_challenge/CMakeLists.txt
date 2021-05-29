@@ -10,6 +10,7 @@ install(PROGRAMS
   scripts/utils_hb.py
   scripts/clean_up.py
   scripts/look_object.py
+  scripts/manipulation.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 
