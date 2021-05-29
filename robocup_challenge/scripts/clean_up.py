@@ -76,6 +76,8 @@ class SetPose(smach.State):
     def __init__(self):
         smach.State.__init__(self, outcomes=["succeeded"], io_keys=['in_pose'])
     def execute(self,userdata):
+        
+        utils_hb.move_arm_neutral()
 
         rel_cord = utils_hb.get_relative_coordinate('base_link','hand_palm_link')
 
@@ -85,9 +87,9 @@ class SetPose(smach.State):
         userdata.in_pose.pose.orientation = rel_cord.rotation
 
         #userdata.in_pose.header.frame_id = "base_link"
-        userdata.in_pose.pose.position.x = rel_cord.translation.x + 0.1
+        userdata.in_pose.pose.position.x = rel_cord.translation.x + 0.15
         #userdata.in_pose.pose.position.y = 0.103366
-        userdata.in_pose.pose.position.z = rel_cord.translation.z + 0.05
+        #userdata.in_pose.pose.position.z = rel_cord.translation.z + 0.05
         #userdata.in_pose.pose.orientation.x = -0.70401285
         #userdata.in_pose.pose.orientation.y = -0.0639018
         #userdata.in_pose.pose.orientation.z = -0.70438379
@@ -124,8 +126,14 @@ def getInstance():
 
         smach.StateMachine.add('LOOK_OBJECT', look_object.getInstance(),
             transitions={
-                'succeeded': 'GRAB_OBJECT', 
-                'failed': 'GO_TO_DROP'             
+                'succeeded': 'GET_POSE', 
+                'failed': 'GET_POSE'             
+            }
+        )
+
+        smach.StateMachine.add('GET_POSE', SetPose(),
+            transitions={
+                'succeeded': 'GRAB_OBJECT'                
             }
         )
 
