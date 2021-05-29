@@ -17,6 +17,16 @@ RUN source /opt/ros/$ROS_DISTRO/setup.bash && \
     catkin_make install -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/opt/ros/$ROS_DISTRO -DCATKIN_ENABLE_TESTING=0 && \
     cd / && rm -r /bio_ik_ws
 
+# install hsrb_moveit_config
+RUN source /opt/ros/$ROS_DISTRO/setup.bash && \
+    mkdir -p /hsrb_moveit_config/src && \
+    cd /hsrb_moveit_config/src && \
+    catkin_init_workspace && \
+    git clone --depth=1 https://github.com/pipperv/hsrb_moveit_config.git && \
+    cd .. && \
+    catkin_make install -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/opt/ros/$ROS_DISTRO -DCATKIN_ENABLE_TESTING=0 && \
+    cd / && rm -r /hsrb_moveit_config
+
 # install libraries
 RUN apt-get install -y ros-melodic-smach ros-melodic-smach-ros
 
