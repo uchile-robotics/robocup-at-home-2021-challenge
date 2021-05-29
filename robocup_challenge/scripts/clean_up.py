@@ -9,7 +9,7 @@ import smach
 import cv2
 import actionlib
 from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
-import tf
+import tf, tf2_geometry_msgs
 from geometry_msgs.msg import PoseStamped, Quaternion, TransformStamped, Twist
 
 import smach_ros
@@ -17,6 +17,8 @@ import smach_ros
 import utils_hb
 
 import look_object
+
+import manipulation
 
 class Setup(smach.State):
     def __init__(self):
@@ -70,6 +72,28 @@ class MoveSM(smach.State):
 
         return 'succeeded'
 
+class SetPose(smach.State):
+    def __init__(self):
+        smach.State.__init__(self, outcomes=["succeeded"], io_keys=['in_pose'])
+    def execute(self,userdata):
+
+        rel_cord = utils_hb.get_relative_coordinate('base_link','hand_palm_link')
+
+        userdata.in_pose.header.frame_id = "base_link"
+
+        userdata.in_pose.pose.position = rel_cord.translation
+        userdata.in_pose.pose.orientation = rel_cord.rotation
+
+        #userdata.in_pose.header.frame_id = "base_link"
+        userdata.in_pose.pose.position.x = rel_cord.translation.x + 0.1
+        #userdata.in_pose.pose.position.y = 0.103366
+        userdata.in_pose.pose.position.z = rel_cord.translation.z + 0.05
+        #userdata.in_pose.pose.orientation.x = -0.70401285
+        #userdata.in_pose.pose.orientation.y = -0.0639018
+        #userdata.in_pose.pose.orientation.z = -0.70438379
+        #userdata.in_pose.pose.orientation.w = 0.06425529
+        return 'succeeded'
+
 def getInstance():
 
     """
@@ -80,6 +104,8 @@ def getInstance():
     """
 
     sm = smach.StateMachine(outcomes=['succeeded', 'aborted'])
+
+    sm.userdata.in_pose = tf2_geometry_msgs.PoseStamped()
 
     with sm:
 
@@ -98,8 +124,14 @@ def getInstance():
 
         smach.StateMachine.add('LOOK_OBJECT', look_object.getInstance(),
             transitions={
-                'succeeded': 'GO_TO_DROP', 
+                'succeeded': 'GRAB_OBJECT', 
                 'failed': 'GO_TO_DROP'             
+            }
+        )
+
+        smach.StateMachine.add('GRAB_OBJECT', manipulation.getInstance(),
+            transitions={
+                'succeeded': 'GO_TO_DROP'                
             }
         )
 

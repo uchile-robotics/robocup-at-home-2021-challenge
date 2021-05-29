@@ -9,6 +9,7 @@ from tf.transformations import euler_from_quaternion, quaternion_from_euler
 import math
 from geometry_msgs.msg import PoseStamped, Quaternion, TransformStamped, Twist
 import moveit_commander
+import tf2_ros
 
 class Move():
     def __init__(self):
@@ -70,9 +71,41 @@ def move_head_tilt(v):
     head.set_joint_value_target("head_tilt_joint", v)
     return head.go()
     
+def get_pose_relative_coordinate(targ_frame, p):
+
+    tfBuffer = tf2_ros.Buffer()
+    listener = tf2_ros.TransformListener(tfBuffer)
+
+    rate = rospy.Rate(10.0)
+
+    while not rospy.is_shutdown():
+        try:
+            trans = tfBuffer.transform(p, targ_frame, rospy.Duration(4.0))
+            break
+        except (tf2_ros.LookupException, tf2_ros.ConnectivityException,tf2_ros.ExtrapolationException):
+            rospy.loginfo("waiting...")
+            rate.sleep()
+            continue
+
+    return trans.pose
+
 
 arm = moveit_commander.MoveGroupCommander('arm')
 
+def move_arm_ik(x, y, z, roll, pitch, yaw):
+
+    p = PoseStamped()
+
+    p.header.frame_id = "/base_link"
+
+    p.pose.position.x = x
+    p.pose.position.y = y
+    p.pose.position.z = z
+
+    p.pose.orientation = quaternion_from_euler(roll, pitch, yaw)
+
+    arm.set_pose_target(p)
+    return arm.go()
 
 def move_arm_neutral():
 
@@ -95,3 +128,32 @@ def move_base_vel(vx, vy, vw):
     twist.linear.y = vy
     twist.angular.z = vw / 180.0 * math.pi 
     base_vel_pub.publish(twist)  
+
+gripper = moveit_commander.MoveGroupCommander("gripper")
+
+def move_hand(v):
+    gripper.set_joint_value_target("hand_motor_joint", v)
+    success = gripper.go()
+    rospy.sleep(6)
+    return success
+
+def get_relative_coordinate(parent, child):
+
+    tfBuffer = tf2_ros.Buffer()
+    listener = tf2_ros.TransformListener(tfBuffer)
+
+    trans = TransformStamped()
+
+    rate = rospy.Rate(10.0)
+
+    while not rospy.is_shutdown():
+        try:
+            trans = tfBuffer.lookup_transform(parent, child,
+                                              rospy.Time().now(),rospy.Duration(1.0))
+            break
+        except (tf2_ros.LookupException, tf2_ros.ConnectivityException,tf2_ros.ExtrapolationException):
+            rospy.loginfo("waiting...")
+            rate.sleep()
+            continue
+
+    return trans.transform
