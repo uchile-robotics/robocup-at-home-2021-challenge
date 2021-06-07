@@ -27,8 +27,28 @@ RUN source /opt/ros/$ROS_DISTRO/setup.bash && \
     catkin_make install -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/opt/ros/$ROS_DISTRO -DCATKIN_ENABLE_TESTING=0 && \
     cd / && rm -r /hsrb_moveit_config
 
+# install yolov5-jp
+RUN source /opt/ros/$ROS_DISTRO/setup.bash && \
+    mkdir -p /yolov5/src && \
+    cd /yolov5/src && \
+    catkin_init_workspace && \
+    git clone --depth=1 https://github.com/Jpcaceres/yolov5.git && \
+    cd .. && \
+    catkin_make install -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/opt/ros/$ROS_DISTRO -DCATKIN_ENABLE_TESTING=0 && \
+    cd / && rm -r /yolov5
+
 # install libraries
-RUN apt-get install -y ros-melodic-smach ros-melodic-smach-ros
+RUN apt-get install -y ros-melodic-smach ros-melodic-smach-ros 
+
+RUN pip install torch==1.4.0 torchvision==0.5.0 -f https://download.pytorch.org/whl/cu100/torch_stable.html
+
+RUN pip install scipy tqdm pathlib==1.0.1
+
+# cambiar activacion
+RUN cd /home/developer/ && git clone https://github.com/Jpcaceres/activation.git &&\
+    cp -rf /activation/activation.py /.local/lib/python2.7/site-packages/torch/nn/modules/
+
+
 
 # create workspace folder
 RUN mkdir -p /workspace/src

@@ -16,6 +16,8 @@ import smach_ros
 
 import utils_hb
 
+import detection
+
 class LookTo(smach.State):
     def __init__(self):
         smach.State.__init__(self, outcomes=["succeeded"], io_keys=['counter'])
@@ -47,9 +49,11 @@ class FindObject(smach.State):
         smach.State.__init__(self, outcomes=["succeeded", "failed", "continue"], input_keys=['counter'])
     def execute(self,userdata):
         print('Looking For Object')
-        rospy.sleep(3.)
-        if userdata.counter == 0: return 'succeeded'
-        return 'continue'
+        model = detection.RGBD()
+        objects = model.detect()
+        print(objects)
+
+        return 'succeeded'
 
 class GetCloseObject(smach.State):
     def __init__(self):
