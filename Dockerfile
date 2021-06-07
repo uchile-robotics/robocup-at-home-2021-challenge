@@ -38,7 +38,7 @@ RUN source /opt/ros/$ROS_DISTRO/setup.bash && \
     cd / && rm -r /yolov5
 
 # install libraries
-RUN apt-get install -y ros-melodic-smach ros-melodic-smach-ros 
+RUN apt-get install -y ros-melodic-smach ros-melodic-smach-ros python-pip
 
 RUN pip install -y torch==1.4.0 torchvision==0.5.0 -f https://download.pytorch.org/whl/cu100/torch_stable.html
 
