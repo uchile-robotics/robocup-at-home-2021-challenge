@@ -7,6 +7,8 @@ RUN apt-get update && \
     apt-get install -y git ros-$ROS_DISTRO-moveit ros-$ROS_DISTRO-moveit-commander ros-$ROS_DISTRO-move-base-msgs ros-$ROS_DISTRO-ros-numpy ros-$ROS_DISTRO-geometry && \
     apt-get clean
 
+RUN PYTHONPATH=/usr/bin/python pip install -r requirements.txt --no-cache-dir
+
 # install bio_ik
 RUN source /opt/ros/$ROS_DISTRO/setup.bash && \
     mkdir -p /bio_ik_ws/src && \
@@ -39,8 +41,6 @@ RUN source /opt/ros/$ROS_DISTRO/setup.bash && \
 
 # install libraries
 RUN apt-get install -y ros-melodic-smach ros-melodic-smach-ros python-pip
-
-RUN PYTHONPATH=/usr/bin/python pip install -r requirements.txt --no-cache-dir
 
 # cambiar activacion
 RUN cd /home/developer/ && git clone https://github.com/Jpcaceres/activation.git &&\
