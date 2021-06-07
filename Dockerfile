@@ -42,8 +42,7 @@ RUN apt-get install -y ros-melodic-smach ros-melodic-smach-ros python-pip \
     &&  PYTHONPATH=/usr/bin/python pip install tqdm torch==1.4.0 torchvision==0.5.0 pathlib==1.0.1 scipy --no-cache-dir
 
 # cambiar activacion
-RUN cd /home/developer/ && git clone https://github.com/Jpcaceres/activation.git &&\
-    cp -rf /activation/activation.py /.local/lib/python2.7/site-packages/torch/nn/modules/
+RUN cd /home/developer/ 
 
 # create workspace folder
 RUN mkdir -p /workspace/src
