@@ -39,7 +39,7 @@ RUN source /opt/ros/$ROS_DISTRO/setup.bash && \
 
 # install libraries
 RUN apt-get install -y ros-melodic-smach ros-melodic-smach-ros python-pip \
-    &&  PYTHONPATH=/usr/bin/python pip install -r requirements.txt --no-cache-dir
+    &&  PYTHONPATH=/usr/bin/python pip install tqdm --no-cache-dir
 
 # cambiar activacion
 RUN cd /home/developer/ && git clone https://github.com/Jpcaceres/activation.git &&\
