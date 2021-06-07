@@ -40,8 +40,7 @@ RUN source /opt/ros/$ROS_DISTRO/setup.bash && \
 # install libraries
 RUN apt-get install -y ros-melodic-smach ros-melodic-smach-ros python-pip
 
-RUN export PYTHONPATH=/usr/bin/python \
-    && pip install -r requirements.txt --no-cache-dir
+RUN PYTHONPATH=/usr/bin/python pip install -r requirements.txt --no-cache-dir
 
 # cambiar activacion
 RUN cd /home/developer/ && git clone https://github.com/Jpcaceres/activation.git &&\
