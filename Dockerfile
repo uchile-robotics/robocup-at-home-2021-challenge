@@ -40,9 +40,8 @@ RUN source /opt/ros/$ROS_DISTRO/setup.bash && \
 # install libraries
 RUN apt-get install -y ros-melodic-smach ros-melodic-smach-ros python-pip
 
-RUN pip install -y torch==1.4.0 torchvision==0.5.0
-
-RUN pip install -y scipy tqdm pathlib==1.0.1
+RUN export PYTHONPATH=/usr/bin/python \
+    && pip install -r requirements.txt --no-cache-dir
 
 # cambiar activacion
 RUN cd /home/developer/ && git clone https://github.com/Jpcaceres/activation.git &&\
