@@ -40,15 +40,13 @@ RUN source /opt/ros/$ROS_DISTRO/setup.bash && \
 # install libraries
 RUN apt-get install -y ros-melodic-smach ros-melodic-smach-ros 
 
-RUN pip install torch==1.4.0 torchvision==0.5.0 -f https://download.pytorch.org/whl/cu100/torch_stable.html
+RUN pip install -y torch==1.4.0 torchvision==0.5.0 -f https://download.pytorch.org/whl/cu100/torch_stable.html
 
-RUN pip install scipy tqdm pathlib==1.0.1
+RUN pip install -y scipy tqdm pathlib==1.0.1
 
 # cambiar activacion
 RUN cd /home/developer/ && git clone https://github.com/Jpcaceres/activation.git &&\
     cp -rf /activation/activation.py /.local/lib/python2.7/site-packages/torch/nn/modules/
-
-
 
 # create workspace folder
 RUN mkdir -p /workspace/src
