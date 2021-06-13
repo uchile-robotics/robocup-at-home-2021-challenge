@@ -20,6 +20,8 @@ import look_object
 
 import manipulation
 
+import detection
+
 class Setup(smach.State):
     def __init__(self):
         smach.State.__init__(self, outcomes=["succeeded", "aborted"])
@@ -104,10 +106,14 @@ def getInstance():
             -PICKUP = 0.8 , 0.9 , 90
             -DROP = 1.8, -0.1, -90
     """
+    # Se crea el modelo 
+    print('CARGANDO MODELO')
+    vis_model = detection.RGBD()
 
     sm = smach.StateMachine(outcomes=['succeeded', 'aborted'])
 
     sm.userdata.in_pose = tf2_geometry_msgs.PoseStamped()
+    sm.userdata.object_pose = []
 
     with sm:
 
@@ -124,7 +130,7 @@ def getInstance():
             }
         )
 
-        smach.StateMachine.add('LOOK_OBJECT', look_object.getInstance(),
+        smach.StateMachine.add('LOOK_OBJECT', look_object.getInstance(vis_model),
             transitions={
                 'succeeded': 'GET_POSE', 
                 'failed': 'GET_POSE'             

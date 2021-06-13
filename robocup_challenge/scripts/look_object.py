@@ -45,26 +45,44 @@ class LookTo(smach.State):
         return 'succeeded'
 
 class FindObject(smach.State):
-    def __init__(self):
-        smach.State.__init__(self, outcomes=["succeeded", "failed", "continue"], input_keys=['counter'])
+    def __init__(self, vision_model):
+        smach.State.__init__(self, outcomes=["succeeded", "failed", "continue"], io_keys=['counter', 'object_pose'])
+        self.vision_model = vision_model
     def execute(self,userdata):
         print('Looking For Object')
-        model = detection.RGBD()
-        objects = model.detect()
+        
+        objects = self.vision_model.detect()
         print(objects)
 
-        return 'succeeded'
+        if object != []:
+            # sort objects
+            #sorted_objects = self.vision_model.sort_objects(objects)
+            #print(sorted_objects)
+            get_object = objects[-1][0]
+            pose = objects[0][0]
+            print('Going for object: {} with pose {}'.format(get_object, pose))
+            real_pose = utils_hb.make_pose_from_camera(pose)
+            userdata.object_pose = real_pose
+            return 'succeeded'
+
+        return 'failed'
+        
 
 class GetCloseObject(smach.State):
     def __init__(self):
-        smach.State.__init__(self, outcomes=["succeeded"], input_keys=['pos'])
+        smach.State.__init__(self, outcomes=["succeeded"], input_keys=['object_pose'])
 
     def execute(self,userdata):
         print('Getting Close to Object')
         try:
             # se tiene que usar la pose obtenida por vision
-            grab_x = userdata.pos[0] 
-            grab_y = userdata.pos[1] - 0.1
+            map_pose = utils_hb.get_pose_relative_coordinate('map', userdata.object_pose)
+            print('AAAAAAAAAAAAAAAAAAAAAA')
+            print(map_pose)
+            grab_x = map_pose.position.x
+            grab_y = map_pose.position.y - 0.5
+            print(grab_x)
+            print(grab_y)
             m = utils_hb.Move()
             m.set_pose(grab_x, grab_y, 90)
             #m.get_pose()
@@ -76,11 +94,10 @@ class GetCloseObject(smach.State):
             sys.exit()
         return 'succeeded'
 
-def getInstance():
+def getInstance(vision_model):
 
-    sm = smach.StateMachine(outcomes=['succeeded', 'failed'])
+    sm = smach.StateMachine(outcomes=['succeeded', 'failed'], input_keys=['object_pose'], output_keys=['object_pose'])
     sm.userdata.counter = 0
-    sm.userdata.pos = [1.5, 1.2, 90]
 
     with sm:
 
@@ -90,7 +107,7 @@ def getInstance():
             }
         )
 
-        smach.StateMachine.add('FIND_OBJECT', FindObject(),
+        smach.StateMachine.add('FIND_OBJECT', FindObject(vision_model),
             transitions={
                 'succeeded': 'GET_CLOSE', 
                 'failed': 'failed',
@@ -110,6 +127,6 @@ if __name__ == '__main__':
 
     rospy.init_node('LOOK_OBJECT')
 
-    sm = getInstance()
+    sm = getInstance(None)
 
     outcome = sm.execute() # here is where the test begin

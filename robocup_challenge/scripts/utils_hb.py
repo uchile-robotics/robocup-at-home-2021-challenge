@@ -4,12 +4,12 @@ import rospy
 import actionlib
 import roslib
 from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
-import tf
 from tf.transformations import euler_from_quaternion, quaternion_from_euler
 import math
 from geometry_msgs.msg import PoseStamped, Quaternion, TransformStamped, Twist
 import moveit_commander
 import tf2_ros
+import tf, tf2_geometry_msgs
 
 class Move():
     def __init__(self):
@@ -157,3 +157,18 @@ def get_relative_coordinate(parent, child):
             continue
 
     return trans.transform
+
+def make_pose_from_camera(simple_pose):
+    pose = tf2_geometry_msgs.PoseStamped()    
+
+    pose.header.frame_id = "head_rgbd_sensor_rgb_frame"  
+
+    pose.pose.position.x = simple_pose[0]
+    pose.pose.position.y = simple_pose[1]
+    pose.pose.position.z = simple_pose[2]
+    pose.pose.orientation.x = 0
+    pose.pose.orientation.y = 0
+    pose.pose.orientation.z = 0
+    pose.pose.orientation.w = 0
+
+    return pose

@@ -15,7 +15,7 @@ class RGBD():
 
     def __init__(self):
         self._br = tf.TransformBroadcaster()
-        self.model = YoloV5(weights='yolo_ycb.pt')
+        self.model = YoloV5(weights='ycb_v2.pt')
         self.names = self.model.names
         #self._cloud_sub = rospy.Subscriber(
         #    "/hsrb/head_rgbd_sensor/depth_registered/rectified_points",
@@ -68,8 +68,8 @@ class RGBD():
             return None, None 
 
     def sort_objects(self, xy):
-        xy = sorted(xy, key=lambda x: x[1], reverse=True) # ordenar eje y de abajo para arriba
-        xy = sorted(xy, key=lambda x: abs(x[0]-self._w_image/2)) # ordenar eje x del medio a los extremos
+        x_ref, y_ref = self._w_image/2, self._h_image
+        xy = sorted(xy, key=lambda x: (x[0]-x_ref)**2 + (x[1]-y_ref)**2) # ordenar puntos
         return xy       
 
     def get_image(self):
@@ -92,7 +92,6 @@ class RGBD():
         trans = TransformStamped()
         while not rospy.is_shutdown():
             try:
-                # 4秒待機して各tfが存在すれば相対関係をセット
                 trans = tfBuffer.lookup_transform(parent, child,
                                                 rospy.Time().now(),
                                                 rospy.Duration(4.0))
@@ -100,44 +99,4 @@ class RGBD():
             except (tf2_ros.ExtrapolationException):
                 pass
 
-        return trans.transform
-
-    def _cloud_cb(self, msg):
-        self._points_data = ros_numpy.numpify(msg)
-        self._image_data = self._points_data['rgb'].view((np.uint8, 4))[..., [2, 1, 0]]
-        if not self._image_data is None:    
-            detections = self.model.detect(self._image_data)
-            if not detections == []:
-                for i, (x1, y1, x2, y2, cls_conf, i_label) in enumerate(detections):
-                    _x = int(round(x1.item()))
-                    _y = int(round(y1.item()))
-                    _w = int(round(x2.item() - x1.item()))
-                    _h = int(round(y2.item() - y1.item()))
-                    conf = cls_conf
-                    label = self.names[int(i_label.item())]
-                    x = self._points_data['x'][_y,_x]
-                    y = self._points_data['y'][_y,_x]
-                    z = self._points_data['z'][_y,_x]
-                    if not np.isnan(z):
-                        self.xyz.append([x,y,z])
-                        print(label)
-                        self._frame_name.append(label)
-                        #print('{},{},{},{}'.format(x,y,z,label))
-
-            if i in range(len(self._frame_name)):
-                (x, y, z) = self._xyz[i]
-                self._br.sendTransform(
-                (x, y, z), tf.transformations.quaternion_from_euler(0, 0, 0),
-                rospy.Time(msg.header.stamp.secs, msg.header.stamp.nsecs),
-                self._frame_name[i],
-                msg.header.frame_id)
-            
-        else:
-            return
-
-
-#rospy.init_node('detector_xyz')
-#m = RGBD()
-#while not rospy.is_shutdown():
-#    print(m.detect())
-    
+        return trans.transform    
