@@ -29,13 +29,13 @@ RUN source /opt/ros/$ROS_DISTRO/setup.bash && \
 
 # install yolov5-jp
 RUN source /opt/ros/$ROS_DISTRO/setup.bash && \
-    rm -rf /yolov5_ws && mkdir -p /yolov5_ws/src && \
-    cd /yolov5_ws/src && \
+    rm -rf /yolov5_ws1 && mkdir -p /yolov5_ws1/src && \
+    cd /yolov5_ws1/src && \
     catkin_init_workspace && \
     git clone --depth=1 https://github.com/Jpcaceres/yolov5.git && \
     cd .. && \
     catkin_make install -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/opt/ros/$ROS_DISTRO -DCATKIN_ENABLE_TESTING=0 && \
-    cd / && rm -rf /yolov5_ws
+    cd / && rm -rf /yolov5_ws1
 
 # install libraries
 RUN apt-get install -y ros-melodic-smach ros-melodic-smach-ros python-pip \
