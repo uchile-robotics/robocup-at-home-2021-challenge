@@ -32,7 +32,7 @@ RUN source /opt/ros/$ROS_DISTRO/setup.bash && \
     mkdir -p /yolov5/src && \
     cd /yolov5/src && \
     catkin_init_workspace && \
-    git clone --depth=1 https://github.com/Jpcaceres/yolov5.git && \
+    git clone https://github.com/Jpcaceres/yolov5.git && \
     cd .. && \
     catkin_make install -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/opt/ros/$ROS_DISTRO -DCATKIN_ENABLE_TESTING=0 && \
     cd / && rm -r /yolov5
