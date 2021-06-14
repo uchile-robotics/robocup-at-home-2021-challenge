@@ -43,6 +43,30 @@ class PanHead(smach.State):
         rospy.sleep(3.)
         return 'succeeded'
 
+class DropObject(smach.State):
+    def __init__(self):
+        smach.State.__init__(self, outcomes=["succeeded"])
+    def execute(self,userdata):
+        rel_cord = utils_hb.get_relative_coordinate('base_link','hand_palm_link')
+
+        p = tf2_geometry_msgs.PoseStamped()
+
+        p.header.frame_id = "base_link"
+
+        p.pose.position = rel_cord.translation
+        p.pose.orientation = rel_cord.rotation
+
+        p.pose.position.x = rel_cord.translation.x + 0.2
+        p.pose.position.z = rel_cord.translation.z - 0.2
+
+        utils_hb.arm.set_pose_target(p)
+        utils_hb.arm.go()
+        utils_hb.move_hand(0.8)
+
+        utils_hb.move_arm_init()
+
+        return 'succeeded'
+
 class MoveSM(smach.State):
     def __init__(self, place):
         smach.State.__init__(self, outcomes=["succeeded"])
@@ -86,25 +110,50 @@ class SetPose(smach.State):
         objects = self.vision_model.detect()
         print(objects)
 
+        print('CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC')
+        planning_frame = utils_hb.whole_body.get_planning_frame()
+        print("============ Reference frame: {}".format(planning_frame))
+
         if object != []:
             obj_index = objects[-1].index(userdata.selected_object)
             selec_pose_raw = objects[0][obj_index]
             selec_pose = utils_hb.make_pose_from_camera(selec_pose_raw)
 
+            print(type(selec_pose))
+
             utils_hb.move_arm_neutral()
             # transformar a pose para manip
             userdata.grab_pose = utils_hb.get_pose_relative_coordinate('odom', selec_pose)
+            #userdata.grab_pose.pose.position.z = userdata.grab_pose.pose.position.z + 0.09
+
+            print(type(userdata.grab_pose))
             
-            utils_hb.rviz_marker('/odom', userdata.grab_pose.position.x, userdata.grab_pose.position.y, userdata.grab_pose.position.z)
+            utils_hb.rviz_marker('/odom', userdata.grab_pose.pose.position.x, userdata.grab_pose.pose.position.y, userdata.grab_pose.pose.position.z)
             
-            ori = quaternion_from_euler(180, 0, 0)
-            userdata.grab_pose.orientation.x = ori[0]
-            userdata.grab_pose.orientation.y = ori[1]
-            userdata.grab_pose.orientation.z = ori[2]
-            userdata.grab_pose.orientation.w = ori[3]
+            #ori = quaternion_from_euler(0, 0, 0)
+            
+            #userdata.grab_pose.pose.orientation.x = ori[0]
+            #userdata.grab_pose.pose.orientation.y = ori[1]
+            #userdata.grab_pose.pose.orientation.z = ori[2]
+            #userdata.grab_pose.pose.orientation.w = ori[3]
+            #userdata.grab_pose.header.stamp = rospy.Time.now()
 
             print('BBBBBBBBBBBBB')
             print(userdata.grab_pose)
+
+            #rospy.sleep(1)
+
+            #userdata.grab_pose = utils_hb.get_pose_relative_coordinate('odom', userdata.grab_pose)
+
+            
+
+            pose_pub = rospy.Publisher("/nico", PoseStamped, queue_size=5)
+            rospy.sleep(1)
+            pose_pub.publish(userdata.grab_pose)
+
+            
+
+            
             
             return 'succeeded'
 
@@ -165,11 +214,11 @@ def getInstance():
 
         smach.StateMachine.add('GO_TO_DROP', MoveSM('DROP'),
             transitions={
-                'succeeded': 'PAN_HEAD'                
+                'succeeded': 'DROP_OBJECT'                
             }
         )
 
-        smach.StateMachine.add('PAN_HEAD', PanHead(),
+        smach.StateMachine.add('DROP_OBJECT', DropObject(),
             transitions={
                 'succeeded': 'succeeded'                
             }

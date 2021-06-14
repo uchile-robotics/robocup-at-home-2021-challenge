@@ -5,6 +5,7 @@ import tf
 import utils_hb
 import smach
 import smach_ros
+from geometry_msgs.msg import Pose
 
 class PoseConvertions(smach.State):
     def __init__(self):
@@ -33,6 +34,8 @@ class PreGrasp(smach.State):
         #Robot movement to pregrasping by IK
         utils_hb.whole_body.set_pose_target(userdata.grab_pose)
         utils_hb.whole_body.go()
+        eef_link = utils_hb.whole_body.get_end_effector_link()
+        print("============ End effector: {}".format(eef_link))
 
         return "succeeded"
 
@@ -42,9 +45,21 @@ class Grasp(smach.State):
     def execute(self, userdata):
         #Robot grasps
         utils_hb.move_hand(0.8)
-        utils_hb.whole_body.set_pose_target(userdata.grab_pose)
+        utils_hb.whole_body.set_pose_target(userdata.grab_pose.pose)
         utils_hb.whole_body.go()
+        utils_hb.move_hand(0.4)
+        
+        '''
+        pose_goal = Pose()
+        pose_goal.orientation.w = 1.0
+        pose_goal.position.x = 0.4
+        pose_goal.position.y = 0.1
+        pose_goal.position.z = 0.4
+        utils_hb.whole_body.set_pose_target(pose_goal)
+        utils_hb.whole_body.go()
+
         utils_hb.move_hand(0.0)
+        '''
 
         return "succeeded"
 
@@ -70,11 +85,11 @@ def getInstance():
 
     with sm:
 
-        smach.StateMachine.add('GO_TO_PREGRASP', PreGrasp(),
-            transitions={
-                'succeeded': 'GRASP'                
-            }
-        )
+        #smach.StateMachine.add('GO_TO_PREGRASP', PreGrasp(),
+        #    transitions={
+        #        'succeeded': 'GRASP'                
+        #    }
+        #)
 
         smach.StateMachine.add('GRASP', Grasp(),
             transitions={

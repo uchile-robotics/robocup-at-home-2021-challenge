@@ -81,9 +81,9 @@ class GetCloseObject(smach.State):
             map_pose = utils_hb.get_pose_relative_coordinate('map', userdata.object_pose)
             print('AAAAAAAAAAAAAAAAAAAAAA')
             print(map_pose)
-            utils_hb.rviz_marker('map', map_pose.position.x, map_pose.position.y, map_pose.position.z)
-            grab_x = map_pose.position.x
-            grab_y = map_pose.position.y - 0.5
+            utils_hb.rviz_marker('map', map_pose.pose.position.x, map_pose.pose.position.y, map_pose.pose.position.z)
+            grab_x = map_pose.pose.position.x
+            grab_y = map_pose.pose.position.y - 0.7
             print(grab_x)
             print(grab_y)
             m = utils_hb.Move()

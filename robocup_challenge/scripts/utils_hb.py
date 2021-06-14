@@ -81,14 +81,15 @@ def get_pose_relative_coordinate(targ_frame, p):
 
     while not rospy.is_shutdown():
         try:
-            trans = tfBuffer.transform(p, targ_frame, rospy.Duration(4.0))
+            trans = tfBuffer.transform(p, targ_frame, rospy.Duration(10.0))
             break
+        
         except (tf2_ros.LookupException, tf2_ros.ConnectivityException,tf2_ros.ExtrapolationException):
             rospy.loginfo("waiting...")
             rate.sleep()
             continue
 
-    return trans.pose
+    return trans
 
 
 arm = moveit_commander.MoveGroupCommander('arm')
@@ -172,10 +173,11 @@ def make_pose_from_camera(simple_pose):
     pose.pose.position.x = simple_pose[0]
     pose.pose.position.y = simple_pose[1]
     pose.pose.position.z = simple_pose[2]
-    pose.pose.orientation.x = 0
-    pose.pose.orientation.y = 0
-    pose.pose.orientation.z = 0
-    pose.pose.orientation.w = 0
+    ori = quaternion_from_euler(0, 0, -90)
+    pose.pose.orientation.x = ori[0]
+    pose.pose.orientation.y = ori[1]
+    pose.pose.orientation.z = ori[2]
+    pose.pose.orientation.w = ori[3]
 
     return pose
 
