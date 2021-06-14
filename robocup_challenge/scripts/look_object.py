@@ -46,7 +46,7 @@ class LookTo(smach.State):
 
 class FindObject(smach.State):
     def __init__(self, vision_model):
-        smach.State.__init__(self, outcomes=["succeeded", "failed", "continue"], io_keys=['counter', 'object_pose'])
+        smach.State.__init__(self, outcomes=["succeeded", "failed", "continue"], io_keys=['counter', 'object_pose', 'selected_object'])
         self.vision_model = vision_model
     def execute(self,userdata):
         print('Looking For Object')
@@ -59,12 +59,14 @@ class FindObject(smach.State):
             #sorted_objects = self.vision_model.sort_objects(objects)
             #print(sorted_objects)
             get_object = objects[-1][0]
+            userdata.selected_object = get_object
             pose = objects[0][0]
             print('Going for object: {} with pose {}'.format(get_object, pose))
             real_pose = utils_hb.make_pose_from_camera(pose)
             userdata.object_pose = real_pose
             return 'succeeded'
 
+        print('Object not found')
         return 'failed'
         
 
@@ -79,6 +81,7 @@ class GetCloseObject(smach.State):
             map_pose = utils_hb.get_pose_relative_coordinate('map', userdata.object_pose)
             print('AAAAAAAAAAAAAAAAAAAAAA')
             print(map_pose)
+            utils_hb.rviz_marker('map', map_pose.position.x, map_pose.position.y, map_pose.position.z)
             grab_x = map_pose.position.x
             grab_y = map_pose.position.y - 0.5
             print(grab_x)
@@ -96,7 +99,7 @@ class GetCloseObject(smach.State):
 
 def getInstance(vision_model):
 
-    sm = smach.StateMachine(outcomes=['succeeded', 'failed'], input_keys=['object_pose'], output_keys=['object_pose'])
+    sm = smach.StateMachine(outcomes=['succeeded', 'failed'], input_keys=['object_pose', 'selected_object'], output_keys=['object_pose', 'selected_object'])
     sm.userdata.counter = 0
 
     with sm:
@@ -110,7 +113,7 @@ def getInstance(vision_model):
         smach.StateMachine.add('FIND_OBJECT', FindObject(vision_model),
             transitions={
                 'succeeded': 'GET_CLOSE', 
-                'failed': 'failed',
+                'failed': 'LOOK_TO',
                 'continue': 'LOOK_TO'           
             }
         )

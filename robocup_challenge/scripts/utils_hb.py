@@ -10,6 +10,7 @@ from geometry_msgs.msg import PoseStamped, Quaternion, TransformStamped, Twist
 import moveit_commander
 import tf2_ros
 import tf, tf2_geometry_msgs
+from visualization_msgs.msg import Marker
 
 class Move():
     def __init__(self):
@@ -91,6 +92,11 @@ def get_pose_relative_coordinate(targ_frame, p):
 
 
 arm = moveit_commander.MoveGroupCommander('arm')
+#arm.allow_replanning(True)
+#arm.set_workspace([-3.0, -3.0, 3.0, 3.0])
+whole_body = moveit_commander.MoveGroupCommander("whole_body_light")
+whole_body.allow_replanning(True)
+whole_body.set_workspace([-3.0, -3.0, 3.0, 3.0])
 
 def move_arm_ik(x, y, z, roll, pitch, yaw):
 
@@ -172,3 +178,24 @@ def make_pose_from_camera(simple_pose):
     pose.pose.orientation.w = 0
 
     return pose
+
+def rviz_marker(frame_id_name, x_in, y_in, z_in):
+    marker = Marker()
+    marker.header.frame_id = frame_id_name
+    marker.type = marker.SPHERE
+    marker.action = marker.ADD
+    marker.scale.x = 0.2
+    marker.scale.y = 0.2
+    marker.scale.z = 0.2
+    marker.color.a = 1.0
+    marker.color.r = 1.0
+    marker.color.g = 1.0
+    marker.color.b = 0.0
+    marker.pose.orientation.w = 1.0
+    marker.pose.position.x = x_in
+    marker.pose.position.y = y_in
+    marker.pose.position.z = z_in
+
+    rviz_publisher = rospy.Publisher("/visualization_marker", Marker, queue_size=5)
+    rospy.sleep(1)
+    rviz_publisher.publish(marker)

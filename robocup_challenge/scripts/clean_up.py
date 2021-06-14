@@ -11,6 +11,8 @@ import actionlib
 from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
 import tf, tf2_geometry_msgs
 from geometry_msgs.msg import PoseStamped, Quaternion, TransformStamped, Twist
+from tf.transformations import euler_from_quaternion, quaternion_from_euler
+from visualization_msgs.msg import Marker
 
 import smach_ros
 
@@ -75,28 +77,38 @@ class MoveSM(smach.State):
         return 'succeeded'
 
 class SetPose(smach.State):
-    def __init__(self):
-        smach.State.__init__(self, outcomes=["succeeded"], io_keys=['in_pose'])
+    def __init__(self, vision_model):
+        smach.State.__init__(self, outcomes=["succeeded", "failed"], io_keys=['object_pose', 'grab_pose', 'selected_object'])
+        self.vision_model = vision_model
     def execute(self,userdata):
-        
-        utils_hb.move_arm_neutral()
 
-        rel_cord = utils_hb.get_relative_coordinate('base_link','hand_palm_link')
+        # get updated object pose
+        objects = self.vision_model.detect()
+        print(objects)
 
-        userdata.in_pose.header.frame_id = "base_link"
+        if object != []:
+            obj_index = objects[-1].index(userdata.selected_object)
+            selec_pose_raw = objects[0][obj_index]
+            selec_pose = utils_hb.make_pose_from_camera(selec_pose_raw)
 
-        userdata.in_pose.pose.position = rel_cord.translation
-        userdata.in_pose.pose.orientation = rel_cord.rotation
+            utils_hb.move_arm_neutral()
+            # transformar a pose para manip
+            userdata.grab_pose = utils_hb.get_pose_relative_coordinate('odom', selec_pose)
+            
+            utils_hb.rviz_marker('/odom', userdata.grab_pose.position.x, userdata.grab_pose.position.y, userdata.grab_pose.position.z)
+            
+            ori = quaternion_from_euler(180, 0, 0)
+            userdata.grab_pose.orientation.x = ori[0]
+            userdata.grab_pose.orientation.y = ori[1]
+            userdata.grab_pose.orientation.z = ori[2]
+            userdata.grab_pose.orientation.w = ori[3]
 
-        #userdata.in_pose.header.frame_id = "base_link"
-        userdata.in_pose.pose.position.x = rel_cord.translation.x + 0.15
-        #userdata.in_pose.pose.position.y = 0.103366
-        #userdata.in_pose.pose.position.z = rel_cord.translation.z + 0.05
-        #userdata.in_pose.pose.orientation.x = -0.70401285
-        #userdata.in_pose.pose.orientation.y = -0.0639018
-        #userdata.in_pose.pose.orientation.z = -0.70438379
-        #userdata.in_pose.pose.orientation.w = 0.06425529
-        return 'succeeded'
+            print('BBBBBBBBBBBBB')
+            print(userdata.grab_pose)
+            
+            return 'succeeded'
+
+        return 'failed'
 
 def getInstance():
 
@@ -112,8 +124,9 @@ def getInstance():
 
     sm = smach.StateMachine(outcomes=['succeeded', 'aborted'])
 
-    sm.userdata.in_pose = tf2_geometry_msgs.PoseStamped()
+    sm.userdata.grab_pose = tf2_geometry_msgs.PoseStamped()
     sm.userdata.object_pose = []
+    sm.userdata.selected_object = ''
 
     with sm:
 
@@ -137,9 +150,10 @@ def getInstance():
             }
         )
 
-        smach.StateMachine.add('GET_POSE', SetPose(),
+        smach.StateMachine.add('GET_POSE', SetPose(vis_model),
             transitions={
-                'succeeded': 'GRAB_OBJECT'                
+                'succeeded': 'GRAB_OBJECT',
+                'failed': 'GET_POSE'                
             }
         )
 
