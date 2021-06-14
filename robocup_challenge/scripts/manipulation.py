@@ -35,7 +35,7 @@ class PreGrasp(smach.State):
         utils_hb.whole_body.set_pose_target(userdata.grab_pose)
         utils_hb.whole_body.go()
         eef_link = utils_hb.whole_body.get_end_effector_link()
-        print("============ End effector: {}".format(eef_link))
+        print("=========== End effector: {}".format(eef_link))
 
         return "succeeded"
 
