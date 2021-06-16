@@ -6,7 +6,7 @@ import rospy
 import ros_numpy
 import numpy as np
 from sensor_msgs.msg import PointCloud2
-from yolov5.detect import YoloV5
+from yolov5.detect_scoring import YoloV5
 import cv2
 import os
 from geometry_msgs.msg import TransformStamped
