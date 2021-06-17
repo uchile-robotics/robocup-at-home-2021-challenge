@@ -37,6 +37,32 @@ RUN source /opt/ros/$ROS_DISTRO/setup.bash && \
     catkin_make install -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/opt/ros/$ROS_DISTRO -DCATKIN_ENABLE_TESTING=0 && \
     cd / && rm -rf /yolov5_wsf
 
+# create user
+ARG user_id
+ENV USERNAME uchile_peppers
+RUN useradd -U --uid ${user_id} -ms /bin/bash $USERNAME \
+    && echo "$USERNAME:$USERNAME" | chpasswd \
+    && adduser $USERNAME sudo \
+    && echo "$USERNAME ALL=NOPASSWD: ALL" >> /etc/sudoers.d/$USERNAME
+USER $USERNAME
+WORKDIR /home/$USERNAME
+
+# install PCL
+RUN wget http://www.vtk.org/files/release/7.1/VTK-7.1.0.tar.gz && \
+    tar -xf VTK-7.1.0.tar.gz && \
+    cd VTK-7.1.0 && mkdir build && cd build && \
+    cmake .. && \
+    make && \
+    make install && \
+    wget https://github.com/PointCloudLibrary/pcl/archive/pcl-1.8.0.tar.gz && \
+    tar -xf pcl-1.8.0.tar.gz && \
+    cd pcl-pcl-1.8.0 && mkdir build && cd build && \
+    cmake .. && \
+    make && \
+    make install && \ 
+    ldconfig
+
+
 # install libraries
 RUN apt-get install -y ros-melodic-smach ros-melodic-smach-ros python-pip \
     &&  PYTHONPATH=/usr/bin/python pip install future tqdm torch==1.4.0 torchvision==0.5.0 pathlib==1.0.1 scipy --no-cache-dir
