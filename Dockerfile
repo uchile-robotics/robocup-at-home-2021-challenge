@@ -38,9 +38,8 @@ RUN source /opt/ros/$ROS_DISTRO/setup.bash && \
     cd / && rm -rf /yolov5_wsf
 
 # create user
-ARG user_id
 ENV USERNAME uchile_peppers
-RUN useradd -U --uid ${user_id} -ms /bin/bash $USERNAME \
+RUN useradd -U -ms /bin/bash $USERNAME \
     && echo "$USERNAME:$USERNAME" | chpasswd \
     && adduser $USERNAME sudo \
     && echo "$USERNAME ALL=NOPASSWD: ALL" >> /etc/sudoers.d/$USERNAME
