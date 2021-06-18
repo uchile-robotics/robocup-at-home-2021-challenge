@@ -41,29 +41,36 @@ RUN source /opt/ros/$ROS_DISTRO/setup.bash && \
 RUN apt-get install -y ros-melodic-smach ros-melodic-smach-ros python-pip wget unzip\
     &&  PYTHONPATH=/usr/bin/python pip install future tqdm torch==1.4.0 torchvision==0.5.0 pathlib==1.0.1 scipy --no-cache-dir
 
-# create user
-ENV USERNAME uchile_peppers
-RUN useradd -U -ms /bin/bash $USERNAME \
-    && echo "$USERNAME:$USERNAME" | chpasswd \
-    && adduser $USERNAME sudo \
-    && echo "$USERNAME ALL=NOPASSWD: ALL" >> /etc/sudoers.d/$USERNAME
-USER $USERNAME
-WORKDIR /home/$USERNAME
+# # create user
+# ENV USERNAME uchile_peppers
+# RUN useradd -U -ms /bin/bash $USERNAME \
+#     && echo "$USERNAME:$USERNAME" | chpasswd \
+#     && adduser $USERNAME sudo \
+#     && echo "$USERNAME ALL=NOPASSWD: ALL" >> /etc/sudoers.d/$USERNAME
+# USER $USERNAME
+# WORKDIR /home/$USERNAME
 
-# install PCL
+# install VTK
 RUN wget http://www.vtk.org/files/release/7.1/VTK-7.1.0.tar.gz && \
     tar -xf VTK-7.1.0.tar.gz && \
     cd VTK-7.1.0 && mkdir build && cd build && \
     cmake .. && \
-    make && \
+    make -j12 && \
     make install && \
-    wget https://github.com/PointCloudLibrary/pcl/archive/pcl-1.8.0.tar.gz && \
-    tar -xf pcl-1.8.0.tar.gz && \
-    cd pcl-pcl-1.8.0 && mkdir build && cd build && \
-    cmake .. && \
-    make && \
+    cd ..
+
+# install PCL    
+RUN wget https://github.com/PointCloudLibrary/pcl/archive/pcl-1.9.0.tar.gz && \
+    tar -xf pcl-1.9.0.tar.gz && \
+    cd pcl-pcl-1.9.0 && mkdir build && cd build && \
+    cmake -DBUILD_visualization=ON .. && \
+    make -j12 && \
     make install && \ 
     ldconfig
+
+RUN wget https://raw.githubusercontent.com/PickNikRobotics/deep_grasp_demo/master/opencv_install.sh && \
+    chmod +x opencv_install.sh && \
+    ./opencv_install.sh
 
 # cambiar activacion
 #RUN cd /home/developer/ 
@@ -75,7 +82,7 @@ RUN mkdir -p /workspace/src
 ADD . /workspace/src
 
 # install dependencies defined in package.xml
-RUN cd /workspace && /ros_entrypoint.sh rosdep install --from-paths src --ignore-src -r -y
+RUN cd /workspace && rosdep update && /ros_entrypoint.sh rosdep install --from-paths src --ignore-src -r -y
 
 # compile and install our algorithm
 RUN cd /workspace && /ros_entrypoint.sh catkin_make install -DCMAKE_INSTALL_PREFIX=/opt/ros/$ROS_DISTRO
