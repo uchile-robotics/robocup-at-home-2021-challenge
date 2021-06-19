@@ -39,7 +39,7 @@ RUN source /opt/ros/$ROS_DISTRO/setup.bash && \
 
 # install libraries
 RUN apt-get install -y ros-melodic-smach ros-melodic-smach-ros python-pip wget unzip\
-    &&  PYTHONPATH=/usr/bin/python pip install future tqdm torch==1.4.0 torchvision==0.5.0 pathlib==1.0.1 scipy --no-cache-dir
+    &&  PYTHONPATH=/usr/bin/python pip install future tqdm torch==1.4.0 torchvision==0.5.0 pathlib==1.0.1 scipy matplotlib --no-cache-dir
 
 # # create user
 # ENV USERNAME uchile_peppers
