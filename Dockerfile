@@ -78,13 +78,13 @@ RUN mkdir -p /workspace/src
 ADD . /workspace/src
 
 # install yolov5 package ros
-RUN cd /workspace/src/ && git clone https://github.com/Jpcaceres/yolov5.git
+RUN cd /workspace/src/ && git clone https://github.com/Jpcaceres/yolov5.git && cd yolov5
 
 # install  package
 RUN export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:usr/local/lib && cd /workspace/src/ && git clone https://github.com/uchile-robotics-forks/gpd_ros.git
 
 # install dependencies defined in package.xml
-RUN cd /workspace && rosdep update && /ros_entrypoint.sh rosdep install --from-paths src --ignore-src -r -y
+RUN cd /workspace && /ros_entrypoint.sh rosdep install --from-paths src --ignore-src -r -y
 
 # compile and install our algorithm
 RUN cd /workspace && /ros_entrypoint.sh catkin_make install -DCMAKE_INSTALL_PREFIX=/opt/ros/$ROS_DISTRO
