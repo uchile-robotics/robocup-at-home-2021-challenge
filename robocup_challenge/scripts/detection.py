@@ -13,7 +13,7 @@ from sensor_msgs.msg import PointCloud2, Image
 from cv_bridge import CvBridge, CvBridgeError
 from geometry_msgs.msg import TransformStamped
 
-from yolov5.detect_scoring import YoloV5
+from yolov5.detect import YoloV5
 
 #np.set_printoptions(threshold=sys.maxsize)
 
