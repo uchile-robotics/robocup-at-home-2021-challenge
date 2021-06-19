@@ -69,7 +69,7 @@ RUN wget https://raw.githubusercontent.com/PickNikRobotics/deep_grasp_demo/maste
 RUN git clone https://github.com/uchile-robotics-forks/gpd.git && \
     cd gpd && \
     mkdir build && cd build && \
-    cmake .. && make -j12 && make install 
+    cmake .. && make -j10 && make install 
 
 # create workspace folder
 RUN mkdir -p /workspace/src
