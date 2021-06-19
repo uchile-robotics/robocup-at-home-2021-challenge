@@ -9,7 +9,6 @@ import tf2_ros
 import rospy
 import ros_numpy
 import numpy as np
-import matplotlib.pyplot as plt
 from sensor_msgs.msg import PointCloud2, Image
 from cv_bridge import CvBridge, CvBridgeError
 from geometry_msgs.msg import TransformStamped
