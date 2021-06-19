@@ -38,6 +38,7 @@ class RGBD():
         self._w_image = 640
         self._h_image = 480
 
+    
     def detect(self, sort=True, save=False, segment=True):
         """Funcion que retorna 2 listas, una con los xyz de la nube de puntos (ordenadas del más cercano al más lejano si 
         sort = True y una lista con sus labels respectivos.
@@ -75,6 +76,7 @@ class RGBD():
                         # agregar a self._xyz las coordenadas con respecto a la nube
                         self.xyz.append([x, y, z])
                         self.labels.append(label)
+                
 
             return self.xyz, self.labels
 
