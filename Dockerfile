@@ -77,15 +77,12 @@ RUN mkdir -p /workspace/src
 # copy our algorithm to workspace folder
 ADD . /workspace/src
 
-RUN apt-get install ros-melodic-pcl-msgs
-
 # install yolov5 package ros
 RUN cd /workspace/src/ && git clone https://github.com/Jpcaceres/yolov5.git
 
-
-
 # install  package
-RUN export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:usr/local/lib && cd /workspace/src/ && git clone https://github.com/uchile-robotics-forks/gpd_ros.git
+RUN RUN apt-get install ros-melodic-pcl-msgs && \
+    export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:usr/local/lib && cd /workspace/src/ && git clone https://github.com/uchile-robotics-forks/gpd_ros.git
 
 # install dependencies defined in package.xml
 RUN cd /workspace && /ros_entrypoint.sh rosdep install --from-paths src --ignore-src -r -y
