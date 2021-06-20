@@ -11,6 +11,7 @@ import actionlib
 from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
 import tf
 from geometry_msgs.msg import PoseStamped, Quaternion, TransformStamped, Twist
+import copy
 
 import smach_ros
 
@@ -22,6 +23,7 @@ class LookTo(smach.State):
     def __init__(self):
         smach.State.__init__(self, outcomes=["succeeded"], io_keys=['counter'])
     def execute(self,userdata):
+        userdata.counter = 0
         if userdata.counter == 0:
             utils_hb.move_head_tilt(-0.8)
             userdata.counter += 1
@@ -54,7 +56,7 @@ class FindObject(smach.State):
         objects = self.vision_model.detect()
         print(objects)
 
-        if object != []:
+        if objects[-1] != []:
             # sort objects
             #sorted_objects = self.vision_model.sort_objects(objects)
             #print(sorted_objects)
@@ -72,7 +74,7 @@ class FindObject(smach.State):
 
 class GetCloseObject(smach.State):
     def __init__(self):
-        smach.State.__init__(self, outcomes=["succeeded"], input_keys=['object_pose'])
+        smach.State.__init__(self, outcomes=["succeeded"], input_keys=['object_pose', 'floor', 'under'], output_keys=['floor', 'under'])
 
     def execute(self,userdata):
         print('Getting Close to Object')
@@ -81,9 +83,20 @@ class GetCloseObject(smach.State):
             map_pose = utils_hb.get_pose_relative_coordinate('map', userdata.object_pose)
             print('AAAAAAAAAAAAAAAAAAAAAA')
             print(map_pose)
+            if map_pose.pose.position.y > 1.6:
+                print('yyyyyyyyyyyyyyyyyy')
+                if map_pose.pose.position.z < 0.3:
+                    print('zzzzzzzzzzzzzzzz')
+                    userdata.under = True
+            if map_pose.pose.position.y < 1.6:
+                userdata.floor = True
+
             utils_hb.rviz_marker('map', map_pose.pose.position.x, map_pose.pose.position.y, map_pose.pose.position.z)
             grab_x = map_pose.pose.position.x + 0.1
             grab_y = map_pose.pose.position.y - 0.65
+            if userdata.under:
+                grab_y = copy.deepcopy(grab_y)
+                grab_y -= 0.15
             print(grab_x)
             print(grab_y)
             m = utils_hb.Move()
@@ -99,7 +112,7 @@ class GetCloseObject(smach.State):
 
 def getInstance(vision_model):
 
-    sm = smach.StateMachine(outcomes=['succeeded', 'failed'], input_keys=['object_pose', 'selected_object'], output_keys=['object_pose', 'selected_object'])
+    sm = smach.StateMachine(outcomes=['succeeded', 'failed'], input_keys=['object_pose', 'selected_object', 'floor', 'under'], output_keys=['object_pose', 'selected_object', 'floor', 'under'])
     sm.userdata.counter = 0
 
     with sm:

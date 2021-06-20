@@ -201,3 +201,6 @@ def rviz_marker(frame_id_name, x_in, y_in, z_in):
     rviz_publisher = rospy.Publisher("/visualization_marker", Marker, queue_size=5)
     rospy.sleep(1)
     rviz_publisher.publish(marker)
+
+def get_current_time_sec():
+    return rospy.Time.now().to_sec()
