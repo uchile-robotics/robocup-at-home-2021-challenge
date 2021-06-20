@@ -4,8 +4,8 @@ SHELL [ "/bin/bash", "-c" ]
 
 # install depending packages (install moveit! algorithms on the workspace side, since moveit-commander loads it from the workspace)
 RUN apt-get update -y && \
-    apt-get install -y git ros-$ROS_DISTRO-moveit ros-$ROS_DISTRO-moveit-commander ros-$ROS_DISTRO-move-base-msgs ros-$ROS_DISTRO-ros-numpy ros-$ROS_DISTRO-geometry nano ros-melodic-pcl-msgs&& \
-    apt-get clean
+    apt-get install -y git ros-$ROS_DISTRO-moveit ros-$ROS_DISTRO-moveit-commander ros-$ROS_DISTRO-move-base-msgs ros-$ROS_DISTRO-ros-numpy ros-$ROS_DISTRO-geometry nano 
+    #apt-get clean
 
 # install bio_ik
 RUN source /opt/ros/$ROS_DISTRO/setup.bash && \
@@ -38,7 +38,7 @@ RUN source /opt/ros/$ROS_DISTRO/setup.bash && \
 #     cd / && rm -rf /yolov5_wsf
 
 # install libraries
-RUN apt-get install -y ros-melodic-smach ros-melodic-smach-ros python-pip wget unzip python-tk\
+RUN apt-get install -y ros-melodic-smach ros-melodic-smach-ros python-pip wget unzip python-tk \
     &&  PYTHONPATH=/usr/bin/python pip install future tqdm torch==1.4.0 torchvision==0.5.0 pathlib==1.0.1 scipy matplotlib --no-cache-dir
 
 # install VTK
@@ -79,7 +79,7 @@ ADD . /workspace/src
 # install yolov5 package ros
 RUN cd /workspace/src/ && git clone https://github.com/Jpcaceres/yolov5.git && cd yolov5 && cd ..
 
-RUN export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:usr/local/lib && cd /workspace/src/ && git clone https://github.com/uchile-robotics-forks/gpd_ros.git
+RUN apt-get install ros-melodic-pcl-msgs && export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:usr/local/lib && cd /workspace/src/ && git clone https://github.com/uchile-robotics-forks/gpd_ros.git
 
 # install dependencies defined in package.xml
 RUN cd /workspace && /ros_entrypoint.sh rosdep install --from-paths src --ignore-src -r -y
