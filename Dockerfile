@@ -77,13 +77,13 @@ RUN mkdir -p /workspace/src
 # copy our algorithm to workspace folder
 ADD . /workspace/src
 
-RUN PYTHONPATH=/usr/bin/python pip install matplotlib 
+RUN PYTHONPATH=/usr/bin/python pip install matplotlib --no-cache-dir
 
 # install yolov5 package ros
 RUN cd /workspace/src/ && git clone https://github.com/Jpcaceres/yolov5.git
 
 # install  package
-RUN apt-get install ros-melodic-pcl-msgs python-tk
+RUN apt-get install ros-melodic-pcl-msgs python-tk -y
 
 RUN export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:usr/local/lib && cd /workspace/src/ && git clone https://github.com/uchile-robotics-forks/gpd_ros.git
 
