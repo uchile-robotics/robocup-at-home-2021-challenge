@@ -6,25 +6,28 @@ import tf
 from tf.transformations import quaternion_from_matrix
 from gpd_ros.msg import GraspConfigList, GraspConfig
 import tf2_geometry_msgs
+import copy
 
 
 class PostGPD():
     def __init__(self):
         self.pub = rospy.Publisher("/jp", tf2_geometry_msgs.PoseStamped, queue_size=1)
         self.p = tf2_geometry_msgs.PoseStamped()
+        self.pp_pre = tf2_geometry_msgs.PoseStamped()
         self.sub = rospy.Subscriber('/detect_grasps/clustered_grasps', GraspConfigList, self.select_best_grasp)
 
     def get_best_grasp(self):
-        return self.p
+        return self.p, self.pp_pre
 
     def select_best_grasp(self, gpd_message):
         """
 
         """
+        best_grasp = ''
         best_grasp = gpd_message.grasps[0]
         self.p = tf2_geometry_msgs.PoseStamped()
         print(self.p)
-        self.transform(best_grasp)
+        self.p, self.pp_pre = self.transform(best_grasp)
         print(self.p)
         #self.pub.publish(self.p)
 
@@ -41,13 +44,15 @@ class PostGPD():
         R = np.asarray(R)
         euler_R = tf.transformations.euler_from_matrix(R)
 
-        self.p.header.frame_id = "head_rgbd_sensor_rgb_frame"
-        self.p.pose.position = gpd_grasp.position 
+        pp = tf2_geometry_msgs.PoseStamped()
+
+        pp.header.frame_id = "head_rgbd_sensor_rgb_frame"
+        pp.pose.position = copy.deepcopy(gpd_grasp.position)
 
         delta = 0.082
-        self.p.pose.position.x += x_approach*delta
-        self.p.pose.position.y += y_approach*delta
-        self.p.pose.position.z += z_approach*delta
+        pp.pose.position.x = pp.pose.position.x + x_approach*delta
+        pp.pose.position.y = pp.pose.position.y + y_approach*delta
+        pp.pose.position.z = pp.pose.position.z + z_approach*delta
 
         ori = tf.transformations.quaternion_from_euler(euler_R[0],euler_R[1],euler_R[2])
         f_rot = tf.transformations.quaternion_from_euler(0, 3*np.pi/2, 0)
@@ -55,10 +60,19 @@ class PostGPD():
         f_mul = tf.transformations.quaternion_multiply(ori, f_rot)
         s_mul = tf.transformations.quaternion_multiply(f_mul, s_rot) 
         choice = f_mul
-        self.p.pose.orientation.x = choice[0] 
-        self.p.pose.orientation.y = choice[1] 
-        self.p.pose.orientation.z = choice[2] 
-        self.p.pose.orientation.w = choice[3] 
+        pp.pose.orientation.x = choice[0] 
+        pp.pose.orientation.y = choice[1] 
+        pp.pose.orientation.z = choice[2] 
+        pp.pose.orientation.w = choice[3] 
+
+        pp_pre = copy.deepcopy(pp)
+        delta_pre = 0.16
+        pp_pre.pose.position.x = pp_pre.pose.position.x + x_approach*delta_pre
+        pp_pre.pose.position.y = pp_pre.pose.position.y + y_approach*delta_pre
+        pp_pre.pose.position.z = pp_pre.pose.position.z + z_approach*delta_pre
+
+
+        return pp, pp_pre
         
 
 """

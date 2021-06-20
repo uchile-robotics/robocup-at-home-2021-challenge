@@ -32,13 +32,11 @@ class PoseConvertions(smach.State):
 
 class PreGrasp(smach.State):
     def __init__(self):
-        smach.State.__init__(self, outcomes=["succeeded"], input_keys=["grab_pose"])
+        smach.State.__init__(self, outcomes=["succeeded"], input_keys=["pre_pose"])
     def execute(self, userdata):
         #Robot movement to pregrasping by IK
-        utils_hb.whole_body.set_pose_target(userdata.grab_pose)
+        utils_hb.whole_body.set_pose_target(userdata.pre_pose)
         utils_hb.whole_body.go()
-        eef_link = utils_hb.whole_body.get_end_effector_link()
-        print("=========== End effector: {}".format(eef_link))
 
         return "succeeded"
 
@@ -84,15 +82,15 @@ class Neutral(smach.State):
 
 def getInstance():
 
-    sm = smach.StateMachine(outcomes=['succeeded'], input_keys=['grab_pose'])
+    sm = smach.StateMachine(outcomes=['succeeded'], input_keys=['grab_pose', 'pre_pose'])
 
     with sm:
 
-        #smach.StateMachine.add('GO_TO_PREGRASP', PreGrasp(),
-        #    transitions={
-        #        'succeeded': 'GRASP'                
-        #    }
-        #)
+        smach.StateMachine.add('GO_TO_PREGRASP', PreGrasp(),
+            transitions={
+                'succeeded': 'GRASP'                
+            }
+        )
 
         smach.StateMachine.add('GRASP', Grasp(),
             transitions={

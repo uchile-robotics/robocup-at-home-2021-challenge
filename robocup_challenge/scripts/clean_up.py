@@ -113,7 +113,7 @@ class MoveSM(smach.State):
 
 class SetPose(smach.State):
     def __init__(self, vision_model):
-        smach.State.__init__(self, outcomes=["succeeded", "failed"], io_keys=['object_pose', 'grab_pose', 'selected_object'])
+        smach.State.__init__(self, outcomes=["succeeded", "failed"], io_keys=['object_pose', 'grab_pose', 'selected_object', 'pre_pose'])
         self.vision_model = vision_model
     def execute(self,userdata):
 
@@ -128,11 +128,11 @@ class SetPose(smach.State):
             print('yay2')
 
             print('sleeping')
-            rospy.sleep(20)
+            rospy.sleep(10)
             print('done sleeping')
 
             # receive best pose
-            best_pose = gpd_receiver.get_best_grasp()
+            best_pose, pre_grasp = gpd_receiver.get_best_grasp()
             print('###################')
             print('best pose')
             print(best_pose)
@@ -140,17 +140,33 @@ class SetPose(smach.State):
             # preparar mano
             utils_hb.move_arm_neutral()
 
-            
+            # check pose erronea en camara
+            if pre_grasp.pose.position.z < 0:
+                print('pose en camara')
+                return 'failed'
+
 
             # transformar a pose para manip
             #best_pose.pose.position.z = best_pose.pose.position.z - 0.09
-            userdata.grab_pose = utils_hb.get_pose_relative_coordinate('odom', best_pose)
-            #userdata.grab_pose.pose.position.z = userdata.grab_pose.pose.position.z + 0.09
+            try:
+                userdata.grab_pose = utils_hb.get_pose_relative_coordinate('odom', best_pose)
+                userdata.pre_pose = utils_hb.get_pose_relative_coordinate('odom', pre_grasp)
+            except: 
+                return 'failed'
+            
+            # check por abajo
+            if userdata.grab_pose.pose.position.z > userdata.pre_pose.pose.position.z:
+                print('por abajo')
+                return 'failed'
             
             utils_hb.rviz_marker('/odom', userdata.grab_pose.pose.position.x, userdata.grab_pose.pose.position.y, userdata.grab_pose.pose.position.z)
 
             print('BBBBBBBBBBBBB')
             print(userdata.grab_pose)            
+
+            pose_pub = rospy.Publisher("/pre_nico", PoseStamped, queue_size=5)
+            rospy.sleep(1)
+            pose_pub.publish(userdata.pre_pose)
 
             pose_pub = rospy.Publisher("/nico", PoseStamped, queue_size=5)
             rospy.sleep(1)
@@ -177,6 +193,7 @@ def getInstance():
     sm = smach.StateMachine(outcomes=['succeeded', 'aborted'])
 
     sm.userdata.grab_pose = tf2_geometry_msgs.PoseStamped()
+    sm.userdata.pre_pose = tf2_geometry_msgs.PoseStamped()
     sm.userdata.object_pose = []
     sm.userdata.selected_object = ''
 
