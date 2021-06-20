@@ -4,7 +4,7 @@ SHELL [ "/bin/bash", "-c" ]
 
 # install depending packages (install moveit! algorithms on the workspace side, since moveit-commander loads it from the workspace)
 RUN apt-get update -y && \
-    apt-get install -y git ros-$ROS_DISTRO-moveit ros-$ROS_DISTRO-moveit-commander ros-$ROS_DISTRO-move-base-msgs ros-$ROS_DISTRO-ros-numpy ros-$ROS_DISTRO-geometry && \
+    apt-get install -y git ros-$ROS_DISTRO-moveit ros-$ROS_DISTRO-moveit-commander ros-$ROS_DISTRO-move-base-msgs ros-$ROS_DISTRO-ros-numpy ros-$ROS_DISTRO-geometry nano&& \
     apt-get clean
 
 # install bio_ik
@@ -38,17 +38,8 @@ RUN source /opt/ros/$ROS_DISTRO/setup.bash && \
 #     cd / && rm -rf /yolov5_wsf
 
 # install libraries
-RUN apt-get install -y ros-melodic-smach ros-melodic-smach-ros python-pip wget unzip\
+RUN apt-get install -y ros-melodic-smach ros-melodic-smach-ros python-pip wget unzip ros-melodic-pcl-msgs python-tk\
     &&  PYTHONPATH=/usr/bin/python pip install future tqdm torch==1.4.0 torchvision==0.5.0 pathlib==1.0.1 scipy matplotlib --no-cache-dir
-
-# # create user
-# ENV USERNAME uchile_peppers
-# RUN useradd -U -ms /bin/bash $USERNAME \
-#     && echo "$USERNAME:$USERNAME" | chpasswd \
-#     && adduser $USERNAME sudo \
-#     && echo "$USERNAME ALL=NOPASSWD: ALL" >> /etc/sudoers.d/$USERNAME
-# USER $USERNAME
-# WORKDIR /home/$USERNAME
 
 # install VTK
 RUN wget http://www.vtk.org/files/release/7.1/VTK-7.1.0.tar.gz && \
@@ -77,7 +68,7 @@ RUN wget https://raw.githubusercontent.com/PickNikRobotics/deep_grasp_demo/maste
 RUN git clone https://github.com/uchile-robotics-forks/gpd.git && \
     cd gpd && \
     mkdir build && cd build && \
-    cmake .. && make -j12 && make install 
+    cmake .. && make -j10 && make install 
 
 # create workspace folder
 RUN mkdir -p /workspace/src
@@ -86,13 +77,12 @@ RUN mkdir -p /workspace/src
 ADD . /workspace/src
 
 # install yolov5 package ros
-RUN cd /workspace/src/ && git clone https://github.com/Jpcaceres/yolov5.git
+RUN cd /workspace/src/ && git clone https://github.com/Jpcaceres/yolov5.git && cd yolov5
 
-# install  package
-RUN cd /workspace/src/ && git clone https://github.com/uchile-robotics-forks/gpd_ros.git
+RUN export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:usr/local/lib && cd /workspace/src/ && git clone https://github.com/uchile-robotics-forks/gpd_ros.git
 
 # install dependencies defined in package.xml
-RUN cd /workspace && rosdep update && /ros_entrypoint.sh rosdep install --from-paths src --ignore-src -r -y
+RUN cd /workspace && /ros_entrypoint.sh rosdep install --from-paths src --ignore-src -r -y
 
 # compile and install our algorithm
 RUN cd /workspace && /ros_entrypoint.sh catkin_make install -DCMAKE_INSTALL_PREFIX=/opt/ros/$ROS_DISTRO
