@@ -1,1 +1,1 @@
-Example project for robocup-at-home-2021-challenge
+Example project for robocup-at-home-2021-challenge Uchile
