@@ -4,7 +4,7 @@ SHELL [ "/bin/bash", "-c" ]
 
 # install depending packages (install moveit! algorithms on the workspace side, since moveit-commander loads it from the workspace)
 RUN apt-get update -y && \
-    apt-get install -y git ros-$ROS_DISTRO-moveit ros-$ROS_DISTRO-moveit-commander ros-$ROS_DISTRO-move-base-msgs ros-$ROS_DISTRO-ros-numpy ros-$ROS_DISTRO-geometry && \
+    apt-get install -y git ros-$ROS_DISTRO-moveit ros-$ROS_DISTRO-moveit-commander ros-$ROS_DISTRO-move-base-msgs ros-$ROS_DISTRO-ros-numpy ros-$ROS_DISTRO-geometry nano&& \
     apt-get clean
 
 # install bio_ik
@@ -40,7 +40,6 @@ RUN source /opt/ros/$ROS_DISTRO/setup.bash && \
 # install libraries
 RUN apt-get install -y ros-melodic-smach ros-melodic-smach-ros python-pip wget unzip ros-melodic-pcl-msgs python-tk\
     &&  PYTHONPATH=/usr/bin/python pip install future tqdm torch==1.4.0 torchvision==0.5.0 pathlib==1.0.1 scipy matplotlib --no-cache-dir
-
 
 # install VTK
 RUN wget http://www.vtk.org/files/release/7.1/VTK-7.1.0.tar.gz && \
