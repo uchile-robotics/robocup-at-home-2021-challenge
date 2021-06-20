@@ -80,6 +80,8 @@ ADD . /workspace/src
 # install yolov5 package ros
 RUN cd /workspace/src/ && git clone https://github.com/Jpcaceres/yolov5.git && cd yolov5
 
+RUN apt-get install ros-melodic-pcl-msgs
+
 # install  package
 RUN export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:usr/local/lib && cd /workspace/src/ && git clone https://github.com/uchile-robotics-forks/gpd_ros.git
 
