@@ -68,7 +68,7 @@ RUN wget https://raw.githubusercontent.com/PickNikRobotics/deep_grasp_demo/maste
 RUN git clone https://github.com/uchile-robotics-forks/gpd.git && \
     cd gpd && \
     mkdir build && cd build && \
-    cmake .. && make -j10 && make install 
+    cmake .. && make -j12 && make install 
 
 # create workspace folder
 RUN mkdir -p /workspace/src
@@ -79,7 +79,7 @@ ADD . /workspace/src
 # install yolov5 package ros
 RUN cd /workspace/src/ && git clone https://github.com/Jpcaceres/yolov5.git && cd yolov5 && cd ..
 
-RUN apt-get install -y ros-melodic-pcl-msgs && export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:usr/local/lib && cd /workspace/src/ && git clone https://github.com/uchile-robotics-forks/gpd_ros.git
+RUN export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:usr/local/lib && cd /workspace/src/ && git clone https://github.com/uchile-robotics-forks/gpd_ros.git
 
 # install dependencies defined in package.xml
 RUN cd /workspace && /ros_entrypoint.sh rosdep install --from-paths src --ignore-src -r -y
