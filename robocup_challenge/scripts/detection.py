@@ -14,7 +14,7 @@ from sensor_msgs.msg import PointCloud2, Image
 from cv_bridge import CvBridge, CvBridgeError
 from geometry_msgs.msg import TransformStamped
 
-from yolov5.detect_scoring import YoloV5
+from yolov5.detect import YoloV5
 
 #np.set_printoptions(threshold=sys.maxsize)
 
@@ -30,7 +30,7 @@ class RGBD():
         # self._cloud_sub = rospy.Subscriber(
         #    "/hsrb/head_rgbd_sensor/depth_registered/rectified_points",
         #    PointCloud2, self._cloud_cb)
-        self.pcloud_pub = rospy.Publisher("/hsrb/head_rgbd_sensor/depth_registered/rectified_points_mask", PointCloud2, queue_size=2)
+        self.pcloud_pub = rospy.Publisher("/hsrb/head_rgbd_sensor/depth_registered/rectified_points_mask", PointCloud2, queue_size=1, latch=True)
         self._points_data = None
         self._image_data = None
         self.xyz = []
@@ -237,9 +237,3 @@ class RGBD():
 
         else:
             return
-
-
-#rospy.init_node('detector_xyz')
-#m = RGBD()
-#while not rospy.is_shutdown():
-#    m.segmentation()

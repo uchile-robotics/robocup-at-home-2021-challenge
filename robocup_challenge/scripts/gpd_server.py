@@ -12,40 +12,61 @@ class PostGPD():
     def __init__(self):
         self.pub = rospy.Publisher("/jp", tf2_geometry_msgs.PoseStamped, queue_size=1)
         self.p = tf2_geometry_msgs.PoseStamped()
+        self.sub = rospy.Subscriber('/detect_grasps/clustered_grasps', GraspConfigList, self.select_best_grasp)
 
-    def select_best_grasp(self):
+    def get_best_grasp(self):
+        return self.p
+
+    def select_best_grasp(self, gpd_message):
         """
 
         """
-        msg = rospy.wait_for_message("/detect_grasps/clustered_grasps",  GraspConfigList)
-        best_grasp = msg.grasps[0]
+        best_grasp = gpd_message.grasps[0]
+        self.p = tf2_geometry_msgs.PoseStamped()
+        print(self.p)
         self.transform(best_grasp)
         print(self.p)
-        self.pub.publish(self.p)
+        #self.pub.publish(self.p)
 
     def transform(self, gpd_grasp):
         x_approach,y_approach,z_approach = gpd_grasp.approach.x, gpd_grasp.approach.y, gpd_grasp.approach.z
         x_binormal,y_binormal,z_binormal = gpd_grasp.binormal.x, gpd_grasp.binormal.y, gpd_grasp.binormal.z
         x_axis,y_axis,z_axis = gpd_grasp.axis.x, gpd_grasp.axis.y, gpd_grasp.axis.z
-        R = [[x_approach,y_approach,z_approach], [x_binormal,y_binormal,z_binormal], [x_axis,y_axis,z_axis]]
+        #R = [[x_approach,y_approach,z_approach], [x_binormal,y_binormal,z_binormal], [x_axis,y_axis,z_axis]]
+        #R = [[x_axis,y_axis,z_axis], [x_binormal,y_binormal,z_binormal], [x_approach,y_approach,z_approach]]
+        R = [[x_approach,x_binormal,x_axis], 
+            [y_approach,y_binormal,y_axis], 
+            [z_approach,z_binormal,z_axis]]
+        #R = [[x_axis,x_binormal,x_approach], [y_axis,y_binormal,y_approach], [z_axis,z_binormal,z_approach]]
         R = np.asarray(R)
         euler_R = tf.transformations.euler_from_matrix(R)
 
-        self.p.header.frame_id = "/head_rgbd_sensor_rgb_frame"
+        self.p.header.frame_id = "head_rgbd_sensor_rgb_frame"
         self.p.pose.position = gpd_grasp.position 
+
+        delta = 0.082
+        self.p.pose.position.x += x_approach*delta
+        self.p.pose.position.y += y_approach*delta
+        self.p.pose.position.z += z_approach*delta
+
         ori = tf.transformations.quaternion_from_euler(euler_R[0],euler_R[1],euler_R[2])
-        self.p.pose.orientation.x = ori[0] 
-        self.p.pose.orientation.y = ori[1] 
-        self.p.pose.orientation.z = ori[2] 
-        self.p.pose.orientation.w = ori[3] 
+        f_rot = tf.transformations.quaternion_from_euler(0, 3*np.pi/2, 0)
+        s_rot = tf.transformations.quaternion_from_euler(0, 0, np.pi)
+        f_mul = tf.transformations.quaternion_multiply(ori, f_rot)
+        s_mul = tf.transformations.quaternion_multiply(f_mul, s_rot) 
+        choice = f_mul
+        self.p.pose.orientation.x = choice[0] 
+        self.p.pose.orientation.y = choice[1] 
+        self.p.pose.orientation.z = choice[2] 
+        self.p.pose.orientation.w = choice[3] 
         
 
- 
+"""
 rospy.init_node('get_grasps')
 m = PostGPD()
 while not rospy.is_shutdown():
     m.select_best_grasp()
-"""
+
 # global variable to store grasps
 grasps = []
 

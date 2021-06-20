@@ -24,11 +24,22 @@ import manipulation
 
 import detection
 
+import gpd_server
+
 class Setup(smach.State):
     def __init__(self):
         smach.State.__init__(self, outcomes=["succeeded", "aborted"])
     def execute(self,userdata):
         utils_hb.move_arm_init()
+        return 'succeeded'
+
+class ResetData(smach.State):
+    def __init__(self):
+        smach.State.__init__(self, outcomes=["succeeded"], io_keys=['object_pose', 'grab_pose', 'selected_object'])
+    def execute(self,userdata):
+        sm.userdata.grab_pose = tf2_geometry_msgs.PoseStamped()
+        sm.userdata.object_pose = []
+        sm.userdata.selected_object = ''
         return 'succeeded'
 
 class PanHead(smach.State):
@@ -89,7 +100,7 @@ class MoveSM(smach.State):
         if self.place == 'DROP':
             try:
                 m = utils_hb.Move()
-                m.set_pose(1.8, -0.1, -90)
+                m.set_pose(1.8, 0.0, -90)
                 #m.get_pose()
                 m.go()
             except:
@@ -106,55 +117,47 @@ class SetPose(smach.State):
         self.vision_model = vision_model
     def execute(self,userdata):
 
-        # get updated object pose
-        objects = self.vision_model.detect()
-        print(objects)
+        # check if mask exists
+        obj_mask = self.vision_model.segmentation()
+        print('yay')
 
-        print('CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC')
-        planning_frame = utils_hb.whole_body.get_planning_frame()
-        print("============ Reference frame: {}".format(planning_frame))
+        if obj_mask != []:
+            
+            # create GPD receiver
+            gpd_receiver = gpd_server.PostGPD()
+            print('yay2')
 
-        if object != []:
-            obj_index = objects[-1].index(userdata.selected_object)
-            selec_pose_raw = objects[0][obj_index]
-            selec_pose = utils_hb.make_pose_from_camera(selec_pose_raw)
+            print('sleeping')
+            rospy.sleep(20)
+            print('done sleeping')
 
-            print(type(selec_pose))
+            # receive best pose
+            best_pose = gpd_receiver.get_best_grasp()
+            print('###################')
+            print('best pose')
+            print(best_pose)
 
+            # preparar mano
             utils_hb.move_arm_neutral()
-            # transformar a pose para manip
-            userdata.grab_pose = utils_hb.get_pose_relative_coordinate('odom', selec_pose)
-            #userdata.grab_pose.pose.position.z = userdata.grab_pose.pose.position.z + 0.09
 
-            print(type(userdata.grab_pose))
+            
+
+            # transformar a pose para manip
+            #best_pose.pose.position.z = best_pose.pose.position.z - 0.09
+            userdata.grab_pose = utils_hb.get_pose_relative_coordinate('odom', best_pose)
+            #userdata.grab_pose.pose.position.z = userdata.grab_pose.pose.position.z + 0.09
             
             utils_hb.rviz_marker('/odom', userdata.grab_pose.pose.position.x, userdata.grab_pose.pose.position.y, userdata.grab_pose.pose.position.z)
-            
-            #ori = quaternion_from_euler(0, 0, 0)
-            
-            #userdata.grab_pose.pose.orientation.x = ori[0]
-            #userdata.grab_pose.pose.orientation.y = ori[1]
-            #userdata.grab_pose.pose.orientation.z = ori[2]
-            #userdata.grab_pose.pose.orientation.w = ori[3]
-            #userdata.grab_pose.header.stamp = rospy.Time.now()
 
             print('BBBBBBBBBBBBB')
-            print(userdata.grab_pose)
-
-            #rospy.sleep(1)
-
-            #userdata.grab_pose = utils_hb.get_pose_relative_coordinate('odom', userdata.grab_pose)
-
-            
+            print(userdata.grab_pose)            
 
             pose_pub = rospy.Publisher("/nico", PoseStamped, queue_size=5)
             rospy.sleep(1)
             pose_pub.publish(userdata.grab_pose)
 
-            
+            #assert(0==1)
 
-            
-            
             return 'succeeded'
 
         return 'failed'
@@ -181,8 +184,14 @@ def getInstance():
 
         smach.StateMachine.add('SETUP', Setup(),
             transitions={
-                'succeeded': 'GO_TO_PICKUP', 
+                'succeeded': 'RESET', 
                 'aborted': 'aborted'
+            }
+        )
+
+        smach.StateMachine.add('RESET', ResetData(),
+            transitions={
+                'succeeded': 'GO_TO_PICKUP'
             }
         )
 
@@ -220,7 +229,7 @@ def getInstance():
 
         smach.StateMachine.add('DROP_OBJECT', DropObject(),
             transitions={
-                'succeeded': 'succeeded'                
+                'succeeded': 'GO_TO_PICKUP'                
             }
         )
 

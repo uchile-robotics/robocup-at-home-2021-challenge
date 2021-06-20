@@ -47,10 +47,10 @@ class Grasp(smach.State):
         smach.State.__init__(self, outcomes=["succeeded"], input_keys=["grab_pose"])
     def execute(self, userdata):
         #Robot grasps
-        utils_hb.move_hand(0.8)
+        utils_hb.move_hand(1.0)
         utils_hb.whole_body.set_pose_target(userdata.grab_pose.pose)
         utils_hb.whole_body.go()
-        utils_hb.move_hand(0.4)
+        utils_hb.move_hand(0.2)
         
         '''
         pose_goal = Pose()

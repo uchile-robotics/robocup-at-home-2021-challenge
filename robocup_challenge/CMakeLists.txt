@@ -12,6 +12,7 @@ install(PROGRAMS
   scripts/look_object.py
   scripts/detection.py
   scripts/manipulation.py
+  scripts/gpd_server.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 
