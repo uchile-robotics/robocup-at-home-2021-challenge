@@ -78,7 +78,7 @@ RUN mkdir -p /workspace/src
 ADD . /workspace/src
 
 # install yolov5 package ros
-RUN cd /workspace/src/ && git clone https://github.com/Jpcaceres/yolov5.git && cd yolov5/
+RUN cd /workspace/src/ && git clone https://github.com/Jpcaceres/yolov5.git && cd yolov5/src/
 
 # install  package
 RUN apt-get install ros-melodic-pcl-msgs 
