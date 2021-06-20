@@ -38,8 +38,8 @@ RUN source /opt/ros/$ROS_DISTRO/setup.bash && \
 #     cd / && rm -rf /yolov5_wsf
 
 # install libraries
-RUN apt-get install -y ros-melodic-smach ros-melodic-smach-ros python-pip wget unzip\
-    &&  PYTHONPATH=/usr/bin/python pip install future tqdm torch==1.4.0 torchvision==0.5.0 pathlib==1.0.1 scipy --no-cache-dir
+RUN apt-get install -y ros-melodic-smach ros-melodic-smach-ros python-pip wget unzip ros-melodic-pcl-msgs python-tk\
+    &&  PYTHONPATH=/usr/bin/python pip install future tqdm torch==1.4.0 torchvision==0.5.0 pathlib==1.0.1 scipy matplotlib --no-cache-dir
 
 
 # install VTK
@@ -77,13 +77,8 @@ RUN mkdir -p /workspace/src
 # copy our algorithm to workspace folder
 ADD . /workspace/src
 
-RUN PYTHONPATH=/usr/bin/python pip install matplotlib --no-cache-dir
-
 # install yolov5 package ros
-RUN cd /workspace/src/ && git clone https://github.com/Jpcaceres/yolov5.git
-
-# install  package
-RUN apt-get install ros-melodic-pcl-msgs python-tk -y
+RUN cd /workspace/src/ && git clone https://github.com/Jpcaceres/yolov5.git && cd yolov5
 
 RUN export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:usr/local/lib && cd /workspace/src/ && git clone https://github.com/uchile-robotics-forks/gpd_ros.git
 
