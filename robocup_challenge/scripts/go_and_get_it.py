@@ -6,6 +6,8 @@ import smach
 from go_to import *
 from listener import *
 import copy
+import tf2_geometry_msgs
+import numpy as np
 #from utils import *
 
 import utils_hb
@@ -59,7 +61,7 @@ class SetObstaclePose(smach.State):
     def __init__(self):
         smach.State.__init__(self, outcomes=['succeeded'], io_keys=['object_pose', 'grab_pose', 'pre_pose', 'selected_object', 'floor'])
 
-    def execute(self):
+    def execute(self,userdata):
         rospy.loginfo('Removing Obstacles')
         sm.userdata.floor = True
         grab_pose_precopy = utils_hb.get_pose_relative_coordinate('odom', userdata.object_pose)
