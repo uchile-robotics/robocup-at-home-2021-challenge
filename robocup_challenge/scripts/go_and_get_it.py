@@ -12,6 +12,8 @@ import utils_hb
 
 import detection
 
+import manipulation
+
 class Look():
     def __init__(self):
         self.limit_sup = 1
@@ -49,6 +51,50 @@ class ClearObstacles(smach.State):
 
     def execute(self):
         rospy.loginfo('Removing Obstacles')
+
+        rospy.sleep(0.1)
+        return 'succeeded'
+
+class SetObstaclePose(smach.State):
+    def __init__(self):
+        smach.State.__init__(self, outcomes=['succeeded'], io_keys=['object_pose', 'grab_pose', 'pre_pose', 'selected_object', 'floor'])
+
+    def execute(self):
+        rospy.loginfo('Removing Obstacles')
+        sm.userdata.floor = True
+        grab_pose_precopy = utils_hb.get_pose_relative_coordinate('odom', userdata.object_pose)
+
+        userdata.grab_pose = copy.deepcopy(grab_pose_precopy)
+        userdata.grab_pose.pose.position.z += 0.07
+
+        ori = tf.transformations.quaternion_from_euler(np.pi, 0, 0)
+        s_rot = tf.transformations.quaternion_from_euler(0, 0, np.pi/2)
+        f_mul = tf.transformations.quaternion_multiply(ori, s_rot)
+        userdata.grab_pose.pose.orientation.x = f_mul[0]
+        userdata.grab_pose.pose.orientation.y = f_mul[1]
+        userdata.grab_pose.pose.orientation.z = f_mul[2]
+        userdata.grab_pose.pose.orientation.w = f_mul[3]
+
+        pre_grasp = copy.deepcopy(userdata.grab_pose)
+        pre_grasp.pose.position.z = userdata.grab_pose.pose.position.z + 0.15
+        userdata.pre_pose = utils_hb.get_pose_relative_coordinate('odom', pre_grasp)
+
+        print(type(userdata.grab_pose))
+        
+        utils_hb.rviz_marker('/odom', userdata.grab_pose.pose.position.x, userdata.grab_pose.pose.position.y, userdata.grab_pose.pose.position.z)
+
+        print('BBBBBBBBBBBBB')
+        print(userdata.grab_pose)           
+
+        pose_pub = rospy.Publisher("/pre_nico", PoseStamped, queue_size=5)
+        rospy.sleep(1)
+        pose_pub.publish(userdata.pre_pose)
+
+        pose_pub = rospy.Publisher("/nico", PoseStamped, queue_size=5)
+        rospy.sleep(1)
+        pose_pub.publish(userdata.grab_pose)
+
+        #assert(0==1)
 
         rospy.sleep(0.1)
         return 'succeeded'
@@ -228,10 +274,17 @@ def getInstance():
         )
 
         
-        smach.StateMachine.add('CLEAR_OBSTACLES', ClearObstacles(),
+        smach.StateMachine.add('SET_OBSTACLES_POSE', SetObstaclePose(),
             transitions={
-                'succeeded':'succeeded'
+                'succeeded':'CLEAR_OBSTACLES'
                 }
+        )
+
+        smach.StateMachine.add('CLEAR_OBSTACLES', manipulation.getInstance(),
+            transitions={
+                'succeeded': 'succeeded', 
+                'failed': 'failed'               
+            }
         )
 
 
