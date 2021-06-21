@@ -2,12 +2,30 @@
 
 import rospy
 import smach
-import smach_ros
 
-import utils_hb
-import listener
+from go_to import *
+from message_listener import *
+#from utils import *
 
-# #ir a goal_area
+obc = Message_listener()
+#rospy.init_node('Message_listener', anonymous=True)
+obc.get_data()
+
+class Look():
+    def __init__(self):
+        self.limit_sup = 1
+        self.limit_inf = -1
+
+    def move_head(self):
+        move_down = [0, -0.2, -0.4, -0.6, -0.8]
+        move_head_tilt(0)
+        for value in move_down:
+             move_head_tilt(value)
+             print("  Mirando...  ")
+             rospy.sleep(2)
+        move_head_tilt(0)
+
+# #ir a obstacule area
 class Ir_obstacle(smach.State):
     def __init__(self):
         smach.State.__init__(self, outcomes=['succeeded','outcome2'])
@@ -18,9 +36,14 @@ class Ir_obstacle(smach.State):
         self.counter += 1
         print("  ir area de obstaculos  ")
         m = Move()
-        m.set_pose(2.65, 2.01, 130)
+        m.set_pose(2.65, 2.01, 105)
         #m.get_pose()
         m.go()
+        obc.get_data()
+        #l = Look()
+        #l.move_head()
+        move_head_tilt(-0.8)
+        rospy.sleep(0.1)
         return 'succeeded'
 
 
@@ -36,6 +59,10 @@ class Ir_delivery(smach.State):
         m.set_pose(0.48, 3.46, 180)
         #m.get_pose()
         m.go()
+        obc.get_data()
+        #l = Look()
+        #l.move_head()
+        rospy.sleep(0.1)
         return 'outcome2'
 
 # ir a goal_area
@@ -50,6 +77,10 @@ class Ir_goal_area(smach.State):
         m.set_pose(2.36, 3.41, 160)
         #m.get_pose()
         m.go()
+        obc.get_data()
+        #l = Look()
+        #l.move_head()
+        rospy.sleep(0.1)
         return 'succeeded'
 
 # define state Ir_food_area
@@ -64,6 +95,10 @@ class Ir_food_area(smach.State):
         m.set_pose(2.25, 4.18, 90)
         #m.get_pose()
         m.go()
+        obc.get_data()
+        #l = Look()
+        #l.move_head()
+        rospy.sleep(0)
         return 'succeeded'
 
 class Ir_search_area(smach.State):
@@ -77,6 +112,10 @@ class Ir_search_area(smach.State):
         m.set_pose(0.6, 0.6, 90)
         #m.get_pose()
         m.go()
+        obc.get_data()
+        l = Look()
+        l.move_head()
+        rospy.sleep(5)
         return 'succeeded'
 
 class Ir_deposit_area(smach.State):
@@ -90,6 +129,10 @@ class Ir_deposit_area(smach.State):
         m.set_pose(1.58, 0.37, 270)
         #m.get_pose()
         m.go()
+        obc.get_data()
+        #l = Look()
+        #l.move_head()
+        rospy.sleep(0.1)
         return 'succeeded'
 
 # main
@@ -109,12 +152,6 @@ def main():
                                transitions={'succeeded':'Ir_food_area',
                                             'outcome2':'succeeded'})
         smach.StateMachine.add('Ir_food_area', Ir_food_area(),
-                               transitions={'succeeded':'Ir_search_area',
-                                            'outcome2':'succeeded'})
-        smach.StateMachine.add('Ir_search_area', Ir_search_area(),
-                               transitions={'succeeded':'Ir_deposit_area',
-                                            'outcome2':'succeeded'})
-        smach.StateMachine.add('Ir_deposit_area', Ir_deposit_area(),
                                transitions={'succeeded':'Ir_delivery',
                                             'outcome2':'succeeded'})
         smach.StateMachine.add('Ir_delivery', Ir_delivery(),
