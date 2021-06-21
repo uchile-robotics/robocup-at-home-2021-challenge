@@ -9,9 +9,11 @@ import math
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.spatial import cKDTree
-from go_to import *
+from utils_hb import *
 
 from detection import *
+
+from look_object import *
 
 # parameter
 N_SAMPLE = 3000 # number of sample_points
@@ -270,7 +272,7 @@ def jo(x_1, y_1, x_2, y_2):
     gy = 51.2  # [m]
     #gx = 45.0 # [m]
     #gy = 45.0  # [m]
-    robot_size = 2.7 # [m]
+    robot_size = 2.5 # [m]
 
     ox = []
     oy = []
@@ -362,16 +364,11 @@ if __name__ == '__main__':
         y.append(item)
     for item in reversed(A[1]):
         x.append(item)
-    print(x)
-    print("")
-    print("")
-    print("")
-    print(y)
 
     A = RGBD()
-    A.detect()
+    pose = A.detect()
 
-    poses = A.detect()[0]
+    poses = A.detect()[0][0]
     n = len(poses)
     print(poses, "  ", n)
 
@@ -379,15 +376,15 @@ if __name__ == '__main__':
     y_obs = []
     z_obs = []
 
-    for i in range(n):
-        x_obs.append(poses[i][0]*10)
-        y_obs.append(poses[i][1]*10)
-        z_obs.append(poses[i][2]*10)
+    #for i in range(n):
+    #    x_obs.append(poses[i][0]*10)
+    #    y_obs.append(poses[i][1]*10)
+    #    z_obs.append(poses[i][2]*10)
 
-    print(" ")
-    print(x_obs)
-    print(" ")
-    print(y_obs)
+    real_pose = utils_hb.make_pose_from_camera(poses)
+    map_pose = utils_hb.get_pose_relative_coordinate('map', real_pose)
+    utils_hb.rviz_marker('map', map_pose.pose.position.x, map_pose.pose.position.y, map_pose.pose.position.z)
+    print(map_pose)
 
     #for i in range(n):
     #    #main()
