@@ -248,6 +248,10 @@ def getInstance():
 
     sm.userdata.object_pose = ''
     sm.userdata.selected_object = ''
+    sm.userdata.grab_pose = tf2_geometry_msgs.PoseStamped()
+    sm.userdata.pre_pose = tf2_geometry_msgs.PoseStamped()
+    sm.userdata.floor = False
+    sm.userdata.under = False
 
     # Open the container
     with sm:
