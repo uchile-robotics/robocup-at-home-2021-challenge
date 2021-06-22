@@ -15,6 +15,7 @@ install(PROGRAMS
   scripts/gpd_server.py
   scripts/go_and_get_it.py
   scripts/go_to.py
+  scripts/listener.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 
