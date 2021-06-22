@@ -97,7 +97,7 @@ arm = moveit_commander.MoveGroupCommander('arm')
 #arm.set_workspace([-3.0, -3.0, 3.0, 3.0])
 whole_body = moveit_commander.MoveGroupCommander("whole_body_light")
 whole_body.allow_replanning(True)
-whole_body.set_workspace([-3.0, -3.0, 3.0, 3.0])
+whole_body.set_workspace([-9.0, -9.0, 9.0, 9.0])
 
 def move_arm_ik(x, y, z, roll, pitch, yaw):
 

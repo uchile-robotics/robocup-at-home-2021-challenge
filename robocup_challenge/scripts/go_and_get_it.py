@@ -246,7 +246,7 @@ def getInstance():
     vis_model = detection.RGBD()
 
     # Create a SMACH state machine
-    sm = smach.StateMachine(outcomes=['succeeded'])
+    sm = smach.StateMachine(outcomes=['succeeded', 'failed'])
 
     sm.userdata.object_pose = ''
     sm.userdata.selected_object = ''
