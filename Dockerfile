@@ -46,7 +46,7 @@ RUN wget http://www.vtk.org/files/release/7.1/VTK-7.1.0.tar.gz && \
     tar -xf VTK-7.1.0.tar.gz && \
     cd VTK-7.1.0 && mkdir build && cd build && \
     cmake .. && \
-    make -j12 && \
+    make -j4 && \
     make install && \
     cd ..
 
@@ -55,7 +55,7 @@ RUN wget https://github.com/PointCloudLibrary/pcl/archive/pcl-1.9.0.tar.gz && \
     tar -xf pcl-1.9.0.tar.gz && \
     cd pcl-pcl-1.9.0 && mkdir build && cd build && \
     cmake -DBUILD_visualization=ON .. && \
-    make -j12 && \
+    make -j4 && \
     make install && \ 
     ldconfig
 
@@ -68,7 +68,7 @@ RUN wget https://raw.githubusercontent.com/PickNikRobotics/deep_grasp_demo/maste
 RUN git clone https://github.com/uchile-robotics-forks/gpd.git && \
     cd gpd && \
     mkdir build && cd build && \
-    cmake .. && make -j12 && make install 
+    cmake .. && make -j4 && make install 
 
 # create workspace folder
 RUN mkdir -p /workspace/src
