@@ -31,9 +31,9 @@ class Grasp(smach.State):
             utils_hb.move_hand(1.0)
         else:
             utils_hb.move_hand(0.8)
-        utils_hb.whole_body.set_pose_target(userdata.grab_pose.pose)
+        utils_hb.whole_body.set_pose_target(userdata.grab_pose)
         utils_hb.whole_body.go()
-        utils_hb.move_hand(0.2)
+        utils_hb.move_hand(0)
 
         return "succeeded"
 
@@ -59,7 +59,7 @@ class Torque(smach.State):
     def execute(self, userdata):
         wrench_raw = rospy.wait_for_message("/hsrb/wrist_wrench/raw",  WrenchStamped)
         torque = np.abs(wrench_raw.wrench.torque.x)
-        if torque > 0.4:
+        if torque > 0.5:
             return "succeeded"
         return "failed"
 
@@ -70,8 +70,8 @@ class GetSafe(smach.State):
     def execute(self,userdata):
         print('Getting Safe')
         start_time = utils_hb.get_current_time_sec()  
-        while utils_hb.get_current_time_sec() - start_time < 1:  
-            utils_hb.move_base_vel(-0.2, 0, 0)
+        while utils_hb.get_current_time_sec() - start_time < 0.5:  
+            utils_hb.move_base_vel(-0.1, 0, 0)
         return 'succeeded'
             
 def getInstance():
@@ -106,7 +106,7 @@ def getInstance():
 
         smach.StateMachine.add('NEUTRAL', Neutral(),
             transitions={
-                'succeeded': 'TORQUE'                
+                'succeeded': 'succeeded'                
             }
         )
 

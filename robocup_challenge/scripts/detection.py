@@ -23,7 +23,7 @@ class RGBD():
     def __init__(self):
         self._br = tf.TransformBroadcaster()
         # ポイントクラウドのサブスクライバのコールバックに_cloud_cbメソッドを登録
-        self.model = YoloV5(weights='ycb_v2.pt')
+        self.model = YoloV5(weights='ycb_v4.pt')
         self.names = self.model.names
         self.bridge = CvBridge()
         # self._cloud_sub = rospy.Subscriber(

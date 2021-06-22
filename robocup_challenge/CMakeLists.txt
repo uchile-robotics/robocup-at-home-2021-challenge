@@ -13,6 +13,8 @@ install(PROGRAMS
   scripts/detection.py
   scripts/manipulation.py
   scripts/gpd_server.py
+  scripts/go_and_get_it.py
+  scripts/go_to.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 
