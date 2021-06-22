@@ -42,33 +42,33 @@ RUN apt-get install -y ros-melodic-smach ros-melodic-smach-ros python-pip wget u
     &&  PYTHONPATH=/usr/bin/python pip install future tqdm torch==1.4.0 torchvision==0.5.0 pathlib==1.0.1 scipy matplotlib --no-cache-dir
 
 # install VTK
-RUN wget http://www.vtk.org/files/release/7.1/VTK-7.1.0.tar.gz && \
-    tar -xf VTK-7.1.0.tar.gz && \
-    cd VTK-7.1.0 && mkdir build && cd build && \
-    cmake .. && \
-    make -j4 && \
-    make install && \
-    cd ..
+#RUN wget http://www.vtk.org/files/release/7.1/VTK-7.1.0.tar.gz && \
+#    tar -xf VTK-7.1.0.tar.gz && \
+#    cd VTK-7.1.0 && mkdir build && cd build && \
+#    cmake .. && \
+#    make -j12 && \
+#    make install && \
+#    cd ..
 
 # install PCL    
-RUN wget https://github.com/PointCloudLibrary/pcl/archive/pcl-1.9.0.tar.gz && \
-    tar -xf pcl-1.9.0.tar.gz && \
-    cd pcl-pcl-1.9.0 && mkdir build && cd build && \
-    cmake -DBUILD_visualization=ON .. && \
-    make -j4 && \
-    make install && \ 
-    ldconfig
+#RUN wget https://github.com/PointCloudLibrary/pcl/archive/pcl-1.9.0.tar.gz && \
+#    tar -xf pcl-1.9.0.tar.gz && \
+#    cd pcl-pcl-1.9.0 && mkdir build && cd build && \
+#    cmake -DBUILD_visualization=ON .. && \
+#    make -j12 && \
+#    make install && \ 
+#    ldconfig
 
 # install opencv 3.4
-RUN wget https://raw.githubusercontent.com/PickNikRobotics/deep_grasp_demo/master/opencv_install.sh && \
-    chmod +x opencv_install.sh && \
-    ./opencv_install.sh
+#RUN wget https://raw.githubusercontent.com/PickNikRobotics/deep_grasp_demo/master/opencv_install.sh && \
+#    chmod +x opencv_install.sh && \
+#    ./opencv_install.sh
 
 # install GPD
-RUN git clone https://github.com/uchile-robotics-forks/gpd.git && \
-    cd gpd && \
-    mkdir build && cd build && \
-    cmake .. && make -j4 && make install 
+#RUN git clone https://github.com/uchile-robotics-forks/gpd.git && \
+#    cd gpd && \
+#    mkdir build && cd build && \
+#    cmake .. && make -j12 && make install 
 
 # create workspace folder
 RUN mkdir -p /workspace/src
@@ -79,7 +79,7 @@ ADD . /workspace/src
 # install yolov5 package ros
 RUN cd /workspace/src/ && git clone https://github.com/Jpcaceres/yolov5.git
 
-RUN apt-get install ros-melodic-pcl-msgs && export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:usr/local/lib && cd /workspace/src/ && git clone https://github.com/uchile-robotics-forks/gpd_ros.git
+#RUN apt-get install ros-melodic-pcl-msgs && export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:usr/local/lib && cd /workspace/src/ && git clone https://github.com/uchile-robotics-forks/gpd_ros.git
 
 # install dependencies defined in package.xml
 RUN cd /workspace && /ros_entrypoint.sh rosdep install --from-paths src --ignore-src -r -y
