@@ -27,10 +27,11 @@ class Grasp(smach.State):
         smach.State.__init__(self, outcomes=["succeeded"], input_keys=["grab_pose", 'floor'])
     def execute(self, userdata):
         #Robot grasps
-        if userdata.floor:
-            utils_hb.move_hand(1.0)
-        else:
-            utils_hb.move_hand(0.8)
+        #if userdata.floor:
+        #    utils_hb.move_hand(1.0)
+        #else:
+        #    utils_hb.move_hand(0.8)
+        utils_hb.move_hand(1.0)
         utils_hb.whole_body.set_pose_target(userdata.grab_pose)
         utils_hb.whole_body.go()
         utils_hb.move_hand(0)

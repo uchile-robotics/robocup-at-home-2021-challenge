@@ -23,7 +23,7 @@ class RGBD():
     def __init__(self):
         self._br = tf.TransformBroadcaster()
         # ポイントクラウドのサブスクライバのコールバックに_cloud_cbメソッドを登録
-        self.model = YoloV5(weights='ycb_v4.pt')
+        self.model = YoloV5(weights='ycb_v7.pt')
         self.names = self.model.names
         self.bridge = CvBridge()
         # self._cloud_sub = rospy.Subscriber(
@@ -59,7 +59,7 @@ class RGBD():
                     _w = int(round(x2.item() - x1.item()))
                     _h = int(round(y2.item() - y1.item()))
                     conf = cls_conf
-                    label = self.names[int(i_label.item())]
+                    label = str(self.names[int(i_label.item())])
                     _xy.append((_x, _y, label))
 
                 if sort:
@@ -105,7 +105,7 @@ class RGBD():
                     _w = int(round(x2.item() - x1.item()))
                     _h = int(round(y2.item() - y1.item()))
                     conf = cls_conf
-                    label = self.names[int(i_label.item())]
+                    label = str(self.names[int(i_label.item())])
                     _xywh.append((_x, _y, _w, _h, label))
 
                 if sort:

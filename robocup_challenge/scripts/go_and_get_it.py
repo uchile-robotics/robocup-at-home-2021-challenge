@@ -59,13 +59,83 @@ class GoObstacle(smach.State):
 
 class GoGoal(smach.State):
     def __init__(self, obc):
-        smach.State.__init__(self, outcomes=['succeeded'])
+        smach.State.__init__(self, outcomes=['succeeded'], io_keys=['goal_obj', 'goal_person'])
         self.obc = obc
 
     def execute(self, userdata):
         rospy.loginfo('Going to goal area')
         m = Move()
-        m.set_pose(2.36, 3.41, 160)
+        m.set_pose(2.2, 4, 90)
+        m.go()
+        print(self.obc)
+        obc_data = self.obc.get_data()
+        rospy.sleep(0.1)
+        utils_hb.move_head_tilt(0)
+        userdata.goal_obj = obc_data.split()[0]
+        userdata.goal_person = obc_data.split()[-1]
+        print('OBJ: {}     PERSON: {}'.format(userdata.goal_obj, userdata.goal_person))
+        return 'succeeded'
+
+class GoPerson(smach.State):
+    def __init__(self):
+        smach.State.__init__(self, outcomes=['succeeded'], io_keys=['goal_obj', 'goal_person'])
+
+    def execute(self, userdata):
+        rospy.loginfo('Going to goal person')
+
+        if userdata.goal_person == 'left':
+            m = Move()
+            m.set_pose(0.5, 2.8, 180)
+            m.go()
+            rospy.sleep(0.1)
+
+        else:
+            m = Move()
+            m.set_pose(0.5, 4, 180)
+            m.go()
+            rospy.sleep(0.1)
+
+        return 'succeeded'
+
+class GoBottom1(smach.State):
+    def __init__(self, obc):
+        smach.State.__init__(self, outcomes=['succeeded'])
+        self.obc = obc
+
+    def execute(self, userdata):
+        rospy.loginfo('Going to goal area bottom 1')
+        m = Move()
+        m.set_pose(1.8, 3, 120)
+        m.go()
+        print(self.obc)
+        self.obc.get_data()
+        rospy.sleep(0.1)
+        return 'succeeded'
+
+class GoBottom2(smach.State):
+    def __init__(self, obc):
+        smach.State.__init__(self, outcomes=['succeeded'])
+        self.obc = obc
+
+    def execute(self, userdata):
+        rospy.loginfo('Going to goal area bottom 2')
+        m = Move()
+        m.set_pose(1.8, 4.23, 90)
+        m.go()
+        print(self.obc)
+        self.obc.get_data()
+        rospy.sleep(0.1)
+        return 'succeeded'
+
+class GoFront(smach.State):
+    def __init__(self, obc):
+        smach.State.__init__(self, outcomes=['succeeded'])
+        self.obc = obc
+
+    def execute(self, userdata):
+        rospy.loginfo('Going to goal area Front')
+        m = Move()
+        m.set_pose(2.65, 3.7, 120)
         m.go()
         print(self.obc)
         self.obc.get_data()
@@ -84,7 +154,8 @@ class DropObstacle(smach.State):
         m.go()
 
         init_height = 0.1
-        init_joints = [init_height, -2.1, 0.0, 0.4, 0.0, 0]
+        #init_joints = [init_height, -2.1, 0.0, 0.4, 0.0, 0]
+        init_joints = [0.1, -0.7, 0.0, -0.4, 0.0, 0.0]
         utils_hb.arm.set_joint_value_target(init_joints)
         utils_hb.arm.go()
 
@@ -217,7 +288,7 @@ class FindObject(smach.State):
 
 class CheckObstacles(smach.State):
     def __init__(self):
-        smach.State.__init__(self, outcomes=["succeeded", 'crucial', 'manip'], io_keys=['object_pose', 'all_objects', 'goal_pref'])
+        smach.State.__init__(self, outcomes=["succeeded", 'crucial', 'manip', 'bottom', 'front'], io_keys=['object_pose', 'all_objects'])
 
     def execute(self,userdata):
         print('Checking obstacles')
@@ -237,7 +308,7 @@ class CheckObstacles(smach.State):
             print(yy)
 
             up_bound = 2.9
-            low_bound = 2.1
+            low_bound = 2.35
             left_bound = 2.8
 
             # check if obstacle in vital position
@@ -256,6 +327,11 @@ class CheckObstacles(smach.State):
             
         if front_problems > 0 and bottom_problems > 0:
             return 'manip'
+
+        if front_problems > 0: 
+            return 'bottom'
+        if bottom_problems > 0:
+            return 'front'
 
         return 'succeeded'
 
@@ -368,6 +444,99 @@ class Ir_deposit_area(smach.State):
         rospy.sleep(0.1)
         return 'succeeded'
 
+class PanHead(smach.State):
+    def __init__(self):
+        smach.State.__init__(self, outcomes=["succeeded"], io_keys=['head_counter'])
+    def execute(self,userdata):
+        utils_hb.move_head_tilt(-0.7)
+        userdata.head_counter = 1
+        return 'succeeded'
+
+class DropObstacle2(smach.State):
+    def __init__(self, obc):
+        smach.State.__init__(self, outcomes=['succeeded'])
+        self.obc = obc
+
+    def execute(self, userdata):
+        rospy.loginfo('Dropping to person')
+
+        init_height = 0.1
+        #init_joints = [init_height, -2.1, 0.0, 0.4, 0.0, 0]
+        init_joints = [0.1, -0.7, 0.0, -0.4, 0.0, 0.0]
+        utils_hb.arm.set_joint_value_target(init_joints)
+        utils_hb.arm.go()
+
+        utils_hb.move_hand(0.8)
+        print(self.obc)
+        self.obc.get_data()
+        utils_hb.move_head_tilt(-0.9)
+        rospy.sleep(0.1)
+        utils_hb.move_arm_init()
+        return 'succeeded'
+
+class ShelfCheck(smach.State):
+    def __init__(self):
+        smach.State.__init__(self, outcomes=['succeeded', 'failed'], io_keys=['object_pose', 'all_objects', 'goal_obj', 'grab_pose', 'pre_pose'])
+
+    def execute(self,userdata):
+        print('Checking Shelf')
+        
+        objects = userdata.all_objects
+        names = objects[-1]
+        print('Object in Shelf: {}'.format(objects))
+        print('Looking for object: {}'.format(userdata.goal_obj))
+
+        if userdata.goal_obj in names:
+            print('yay')
+            obj_index = objects[-1].index(userdata.goal_obj)
+            print('yay2')
+            selec_pose_raw = objects[0][obj_index]
+            selec_pose = utils_hb.make_pose_from_camera(selec_pose_raw)
+
+            print('EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE')
+            print(selec_pose)
+
+            grab_pose_precopy = utils_hb.get_pose_relative_coordinate('map', selec_pose)
+
+            userdata.grab_pose = copy.deepcopy(grab_pose_precopy)
+            #userdata.grab_pose.pose.position.y += 0.07
+
+            ori = tf.transformations.quaternion_from_euler(0, np.pi/2, 0)
+            s_rot = tf.transformations.quaternion_from_euler(0, 0, np.pi)
+            ss_rot = tf.transformations.quaternion_from_euler(np.pi/2, 0, 0)
+            f_mul = tf.transformations.quaternion_multiply(ori, s_rot)
+            ff_mul = tf.transformations.quaternion_multiply(f_mul, ss_rot)
+            userdata.grab_pose.pose.orientation.x = ff_mul[0]
+            userdata.grab_pose.pose.orientation.y = ff_mul[1]
+            userdata.grab_pose.pose.orientation.z = ff_mul[2]
+            userdata.grab_pose.pose.orientation.w = ff_mul[3]
+
+            pre_grasp = copy.deepcopy(userdata.grab_pose)
+            pre_grasp.pose.position.y = userdata.grab_pose.pose.position.y - 0.15
+
+            userdata.pre_pose = utils_hb.get_pose_relative_coordinate('map', pre_grasp)
+
+            grab_x = userdata.grab_pose.pose.position.x + 0.15
+            grab_y = userdata.grab_pose.pose.position.y - 0.7
+            print(grab_x)
+            print(grab_y)
+            m = utils_hb.Move()
+            m.set_pose(grab_x, grab_y, 90)
+            m.go()
+
+            pose_pub = rospy.Publisher("/pre_nico", PoseStamped, queue_size=5)
+            rospy.sleep(1)
+            pose_pub.publish(userdata.pre_pose)
+
+            pose_pub = rospy.Publisher("/nico", PoseStamped, queue_size=5)
+            rospy.sleep(1)
+            pose_pub.publish(userdata.grab_pose)
+
+            return 'succeeded'
+
+        return 'failed'
+        
+
 # main
 def getInstance():
 
@@ -386,8 +555,12 @@ def getInstance():
     sm.userdata.pre_pose = tf2_geometry_msgs.PoseStamped()
     sm.userdata.floor = False
     sm.userdata.under = False
-    sm.userdata.goal_pref = ''
+    sm.userdata.goal_obj = ''
+    sm.userdata.goal_person = ''
+    sm.userdata.goal_obj_pose = 0
     sm.userdata.all_objects = []
+    sm.userdata.head_counter = 0
+
     # Open the container
     with sm:
         # Add states to the container
@@ -417,7 +590,9 @@ def getInstance():
             transitions={
                 'succeeded':'GO_GOAL',
                 'crucial': 'FIND_OBJECT',
-                'manip': 'FIND_OBJECT'
+                'manip': 'FIND_OBJECT',
+                'bottom': 'GO_BOTTOM1',
+                'front': 'GO_FRONT'
                 }
         )
 
@@ -451,13 +626,74 @@ def getInstance():
             }
         )
 
+        #################### GOAL #############################
+
+        smach.StateMachine.add('GO_BOTTOM1', GoBottom1(obc),
+            transitions={
+                'succeeded':'GO_BOTTOM2'
+                }
+        )
+
+        smach.StateMachine.add('GO_BOTTOM2', GoBottom2(obc),
+            transitions={
+                'succeeded':'GO_GOAL'
+                }
+        )
+
+        smach.StateMachine.add('GO_FRONT', GoFront(obc),
+            transitions={
+                'succeeded':'GO_GOAL'
+                }
+        )
+
         smach.StateMachine.add('GO_GOAL', GoGoal(obc),
             transitions={
-                'succeeded':'succeeded'
+                'succeeded':'FIND_OBJECT_SHELF'
+                }
+        )
+
+        ######### GRAB OBJECT ############################
+
+        smach.StateMachine.add('SHELF_PAN', PanHead(),
+            transitions={
+                'succeeded':'FIND_OBJECT_SHELF'
                 }
         )
         
+        smach.StateMachine.add('FIND_OBJECT_SHELF', FindObject(vis_model, check_flag=True),
+            transitions={
+                'succeeded': 'FIND_OBJECT_SHELF', 
+                'failed': 'FIND_OBJECT_SHELF',
+                'continue': 'FIND_OBJECT_SHELF', 
+                'check': 'CHECK_SHELF'
+                }
+        )
 
+        smach.StateMachine.add('CHECK_SHELF', ShelfCheck(),
+            transitions={
+                'succeeded':'GRAB_GOAL',
+                'failed':'SHELF_PAN'
+                }
+        )
+
+        smach.StateMachine.add('GRAB_GOAL', manipulation.getInstance(),
+            transitions={
+                'succeeded': 'GO_PERSON', 
+                'failed': 'failed'               
+            }
+        )
+
+        smach.StateMachine.add('GO_PERSON', GoPerson(),
+            transitions={
+                'succeeded':'DROP_OBSTACLE2'
+                }
+        )
+
+        smach.StateMachine.add('DROP_OBSTACLE2', DropObstacle2(obc),
+            transitions={
+                'succeeded': 'succeeded'             
+            }
+        )
         
 
 
