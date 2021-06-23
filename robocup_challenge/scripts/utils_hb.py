@@ -94,7 +94,7 @@ def get_pose_relative_coordinate(targ_frame, p):
 
 arm = moveit_commander.MoveGroupCommander('arm')
 #arm.allow_replanning(True)
-#arm.set_workspace([-3.0, -3.0, 3.0, 3.0])
+arm.set_workspace([-3, -3, -1, 3, 3, 5])
 whole_body = moveit_commander.MoveGroupCommander("whole_body_light")
 whole_body.allow_replanning(True)
 whole_body.set_workspace([-9.0, -9.0, 9.0, 9.0])

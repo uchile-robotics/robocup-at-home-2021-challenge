@@ -476,6 +476,99 @@ class DropObstacle2(smach.State):
 
 class ShelfCheck(smach.State):
     def __init__(self):
+        smach.State.__init__(self, outcomes=['succeeded', 'failed', 'oclu'], io_keys=['object_pose', 'all_objects', 'goal_obj', 'grab_pose', 'pre_pose', 'head_counter'])
+
+    def calc_poses(self, raw_pose, frame_link):
+        selec_pose = utils_hb.make_pose_from_camera(raw_pose)
+
+        print('EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE')
+        print(selec_pose)
+
+        grab_pose_precopy = utils_hb.get_pose_relative_coordinate(frame_link, selec_pose)
+
+        grab_pose = copy.deepcopy(grab_pose_precopy)
+        #grab_pose.pose.position.y += 0.07
+
+        ori = tf.transformations.quaternion_from_euler(0, np.pi/2, 0)
+        s_rot = tf.transformations.quaternion_from_euler(0, 0, np.pi)
+        ss_rot = tf.transformations.quaternion_from_euler(np.pi/2, 0, 0)
+        f_mul = tf.transformations.quaternion_multiply(ori, s_rot)
+        ff_mul = tf.transformations.quaternion_multiply(f_mul, ss_rot)
+        grab_pose.pose.orientation.x = ff_mul[0]
+        grab_pose.pose.orientation.y = ff_mul[1]
+        grab_pose.pose.orientation.z = ff_mul[2]
+        grab_pose.pose.orientation.w = ff_mul[3]
+
+        pre_grasp = copy.deepcopy(grab_pose)
+        pre_grasp.pose.position.y = grab_pose.pose.position.y - 0.15
+
+        pre_pose = utils_hb.get_pose_relative_coordinate(frame_link, pre_grasp)
+
+        return grab_pose, pre_pose
+
+
+
+    def execute(self,userdata):
+        print('Checking Shelf')
+        
+        objects = userdata.all_objects
+        names = objects[-1]
+        print('Object in Shelf: {}'.format(objects))
+        print('Looking for object: {}'.format(userdata.goal_obj))
+
+        if userdata.goal_obj in names:
+            print('yay')
+            obj_index = objects[-1].index(userdata.goal_obj)
+            print('yay2')
+            selec_pose_raw = objects[0][obj_index]
+
+            userdata.grab_pose, userdata.pre_pose = self.calc_poses(selec_pose_raw, 'map')
+
+            grab_x = userdata.grab_pose.pose.position.x + 0.1
+            grab_y = userdata.grab_pose.pose.position.y - 0.7
+            print(grab_x)
+            print(grab_y)
+            m = utils_hb.Move()
+            m.set_pose(grab_x, grab_y, 90)
+            m.go()
+
+            pose_pub = rospy.Publisher("/pre_nico", PoseStamped, queue_size=5)
+            rospy.sleep(1)
+            pose_pub.publish(userdata.pre_pose)
+
+            pose_pub = rospy.Publisher("/nico", PoseStamped, queue_size=5)
+            rospy.sleep(1)
+            pose_pub.publish(userdata.grab_pose)
+
+
+            for i, obj in enumerate(names):
+                if obj != userdata.goal_obj:
+                    selec_pose_raw_oclu = objects[0][i]
+                    oclu_pose, oclu_pre = self.calc_poses(selec_pose_raw_oclu, 'map')
+
+                    deltax = np.abs(oclu_pose.pose.position.x - userdata.grab_pose.pose.position.x)
+                    deltaz = np.abs(oclu_pose.pose.position.z - userdata.grab_pose.pose.position.z)
+                    epsilon = 0.1
+                    if deltax < epsilon and deltaz < epsilon:
+                        userdata.grab_pose = copy.deepcopy(oclu_pose)
+                        userdata.pre_pose = copy.deepcopy(oclu_pre)
+                        return 'oclu'
+
+            return 'succeeded'
+
+        if userdata.head_counter == 1:
+            print('choosing random object')
+            selec_pose_raw_rand = objects[0][0]
+            rand_pose, rand_pre = self.calc_poses(selec_pose_raw_rand, 'map')
+            userdata.grab_pose = copy.deepcopy(rand_pose)
+            userdata.pre_pose = copy.deepcopy(rand_pre)
+            return 'succeeded'
+                
+
+        return 'failed'
+        
+class ShelfCheck2(smach.State):
+    def __init__(self):
         smach.State.__init__(self, outcomes=['succeeded', 'failed'], io_keys=['object_pose', 'all_objects', 'goal_obj', 'grab_pose', 'pre_pose'])
 
     def execute(self,userdata):
@@ -496,10 +589,12 @@ class ShelfCheck(smach.State):
             print('EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE')
             print(selec_pose)
 
-            grab_pose_precopy = utils_hb.get_pose_relative_coordinate('map', selec_pose)
+            grab_pose_precopy = utils_hb.get_pose_relative_coordinate('base_link', selec_pose)
 
             userdata.grab_pose = copy.deepcopy(grab_pose_precopy)
-            #userdata.grab_pose.pose.position.y += 0.07
+
+            rel_cord = utils_hb.get_relative_coordinate('base_link','hand_palm_link')
+            userdata.grab_pose.pose.y = rel_cord.translation.y
 
             ori = tf.transformations.quaternion_from_euler(0, np.pi/2, 0)
             s_rot = tf.transformations.quaternion_from_euler(0, 0, np.pi)
@@ -512,17 +607,9 @@ class ShelfCheck(smach.State):
             userdata.grab_pose.pose.orientation.w = ff_mul[3]
 
             pre_grasp = copy.deepcopy(userdata.grab_pose)
-            pre_grasp.pose.position.y = userdata.grab_pose.pose.position.y - 0.15
+            pre_grasp.pose.position.x = userdata.grab_pose.pose.position.x - 0.15
 
-            userdata.pre_pose = utils_hb.get_pose_relative_coordinate('map', pre_grasp)
-
-            grab_x = userdata.grab_pose.pose.position.x + 0.15
-            grab_y = userdata.grab_pose.pose.position.y - 0.7
-            print(grab_x)
-            print(grab_y)
-            m = utils_hb.Move()
-            m.set_pose(grab_x, grab_y, 90)
-            m.go()
+            userdata.pre_pose = utils_hb.get_pose_relative_coordinate('base_link', pre_grasp)
 
             pose_pub = rospy.Publisher("/pre_nico", PoseStamped, queue_size=5)
             rospy.sleep(1)
@@ -532,10 +619,15 @@ class ShelfCheck(smach.State):
             rospy.sleep(1)
             pose_pub.publish(userdata.grab_pose)
 
+            assert(0==1)
+
+            #for i, obj in enumerate(names):
+            #    if obj != userdata.goal_obj:
+            #        pass
+
             return 'succeeded'
 
         return 'failed'
-        
 
 # main
 def getInstance():
@@ -672,7 +764,8 @@ def getInstance():
         smach.StateMachine.add('CHECK_SHELF', ShelfCheck(),
             transitions={
                 'succeeded':'GRAB_GOAL',
-                'failed':'SHELF_PAN'
+                'failed':'SHELF_PAN', 
+                'oclu': 'GRAB_GOAL'
                 }
         )
 
