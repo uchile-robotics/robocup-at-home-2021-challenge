@@ -57,7 +57,7 @@ class Grasp(smach.State):
         utils_hb.move_hand(final_width)
         utils_hb.whole_body.set_pose_target(userdata.grab_pose)
         utils_hb.whole_body.go()
-        utils_hb.move_hand(0)
+        utils_hb.move_hand(max(userdata.width.data/0.126 - 3*w_offset, 0))
 
         #utils_hb.whole_body.clear_trajectory_constraints()
 
