@@ -75,7 +75,7 @@ class Neutral(smach.State):
         smach.State.__init__(self, outcomes=["succeeded"])
     def execute(self, userdata):
         #Robot to Neutral
-        utils_hb.move_arm_neutral()
+        utils_hb.move_arm_init()
 
         return "succeeded"
 

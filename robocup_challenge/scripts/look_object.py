@@ -49,7 +49,7 @@ class LookTo(smach.State):
 
 class FindObject(smach.State):
     def __init__(self, vision_model):
-        smach.State.__init__(self, outcomes=["succeeded", "failed", "continue"], io_keys=['counter', 'object_pose', 'selected_object'])
+        smach.State.__init__(self, outcomes=["succeeded", "failed", "continue"], io_keys=['counter', 'object_pose', 'selected_object', 'ban_list'])
         self.vision_model = vision_model
     def execute(self,userdata):
         print('Looking For Object')
@@ -58,16 +58,16 @@ class FindObject(smach.State):
         print(objects)
 
         if objects[-1] != []:
-            # sort objects
-            #sorted_objects = self.vision_model.sort_objects(objects)
-            #print(sorted_objects)
-            get_object = objects[-1][0]
-            userdata.selected_object = get_object
-            pose = objects[0][0]
-            print('Going for object: {} with pose {}'.format(get_object, pose))
-            real_pose = utils_hb.make_pose_from_camera(pose)
-            userdata.object_pose = real_pose
-            return 'succeeded'
+            for i in range(len(objects[-1])):
+                if not objects[-1][i] in userdata.ban_list: 
+                    get_object = objects[-1][i]
+                    userdata.selected_object = get_object
+                    pose = objects[0][i]
+                    print('Going for object: {} with pose {}'.format(get_object, pose))
+                    real_pose = utils_hb.make_pose_from_camera(pose)
+                    userdata.object_pose = real_pose
+                    return 'succeeded'
+                print('item is banned')
 
         print('Object not found')
         return 'failed'
@@ -104,7 +104,7 @@ class GetCloseObject(smach.State):
 
 def getInstance(vision_model):
 
-    sm = smach.StateMachine(outcomes=['succeeded', 'failed'], input_keys=['object_pose', 'selected_object'], output_keys=['object_pose', 'selected_object'])
+    sm = smach.StateMachine(outcomes=['succeeded', 'failed'], input_keys=['object_pose', 'selected_object', 'ban_list'], output_keys=['object_pose', 'selected_object'])
     sm.userdata.counter = 0
 
     with sm:

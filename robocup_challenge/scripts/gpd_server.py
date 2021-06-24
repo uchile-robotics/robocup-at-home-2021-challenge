@@ -35,37 +35,38 @@ class PostGPD():
         """
 
         """
-        best_grasp = copy.deepcopy(gpd_message.grasps[0])
-        best_grasp.position.z = 1
+        if gpd_message.grasps != []:
+            best_grasp = copy.deepcopy(gpd_message.grasps[0])
+            best_grasp.position.z = 1
 
-        jp_cloud = PointCloud()
-        jp_cloud.header.frame_id = 'base_link'
-        jp_cloud.header.stamp = rospy.Time.now()
+            jp_cloud = PointCloud()
+            jp_cloud.header.frame_id = 'base_link'
+            jp_cloud.header.stamp = rospy.Time.now()
 
-        for grasp in gpd_message.grasps:
-            point = Point32()
-            point.x = grasp.position.x
-            point.y = grasp.position.y
-            point.z = grasp.position.z
-            jp_cloud.points.append(point)
+            for grasp in gpd_message.grasps:
+                point = Point32()
+                point.x = grasp.position.x
+                point.y = grasp.position.y
+                point.z = grasp.position.z
+                jp_cloud.points.append(point)
 
-        self.pub_grasp.publish(jp_cloud)
+            self.pub_grasp.publish(jp_cloud)
 
-        for grasp in gpd_message.grasps:
-            #print('&&&&&&&&&&&&&&&&&&&&&&&&&')
-            #print(grasp)
-            if grasp.approach.x >= 0 and grasp.approach.z <= 0:
-                print('changed best grasp')
-                best_grasp = copy.deepcopy(grasp)
-                self.score = best_grasp.score
-                break
-        
-        self.p = tf2_geometry_msgs.PoseStamped()
-        print(self.p)
-        self.p, self.pp_pre, self.width = self.transform(best_grasp)
-        print(self.p)
-        #self.pub.publish(self.p)
-        self.flag = True
+            for grasp in gpd_message.grasps:
+                #print('&&&&&&&&&&&&&&&&&&&&&&&&&')
+                #print(grasp)
+                if grasp.approach.x >= 0 and grasp.approach.z <= 0:
+                    print('changed best grasp')
+                    best_grasp = copy.deepcopy(grasp)
+                    self.score = best_grasp.score
+                    break
+            
+            self.p = tf2_geometry_msgs.PoseStamped()
+            print(self.p)
+            self.p, self.pp_pre, self.width = self.transform(best_grasp)
+            print(self.p)
+            #self.pub.publish(self.p)
+            self.flag = True
 
     def transform(self, gpd_grasp):
         x_approach,y_approach,z_approach = gpd_grasp.approach.x, gpd_grasp.approach.y, gpd_grasp.approach.z
