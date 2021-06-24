@@ -6,7 +6,7 @@ SHELL [ "/bin/bash", "-c" ]
 RUN apt-get update -y && \
     apt-get install -y git ros-$ROS_DISTRO-moveit ros-$ROS_DISTRO-moveit-commander ros-$ROS_DISTRO-move-base-msgs \
     ros-$ROS_DISTRO-ros-numpy ros-$ROS_DISTRO-geometry ros-$ROS_DISTRO-smach ros-$ROS_DISTRO-smach-ros python-pip wget unzip python-tk \
-    ros-$ROS_DISTRO-pcl-msgs ros-$ROS_DISTRO-pcl-conversions python-tf2-sensor-msgs && \
+    ros-$ROS_DISTRO-pcl-msgs ros-$ROS_DISTRO-pcl-conversions ros-$ROS_DISTRO-tf2-sensor-msgs && \
     apt-get clean
 
 # install bio_ik
