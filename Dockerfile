@@ -4,8 +4,10 @@ SHELL [ "/bin/bash", "-c" ]
 
 # install depending packages (install moveit! algorithms on the workspace side, since moveit-commander loads it from the workspace)
 RUN apt-get update -y && \
-    apt-get install -y git ros-$ROS_DISTRO-moveit ros-$ROS_DISTRO-moveit-commander ros-$ROS_DISTRO-move-base-msgs ros-$ROS_DISTRO-ros-numpy ros-$ROS_DISTRO-geometry nano 
-    #apt-get clean
+    apt-get install -y git ros-$ROS_DISTRO-moveit ros-$ROS_DISTRO-moveit-commander ros-$ROS_DISTRO-move-base-msgs \
+    ros-$ROS_DISTRO-ros-numpy ros-$ROS_DISTRO-geometry ros-$ROS_DISTRO-smach ros-$ROS_DISTRO-smach-ros python-pip wget unzip python-tk \
+    ros-$ROS_DISTRO-pcl-msgs ros-$ROS_DISTRO-pcl-conversions && \
+    apt-get clean
 
 # install bio_ik
 RUN source /opt/ros/$ROS_DISTRO/setup.bash && \
@@ -27,48 +29,37 @@ RUN source /opt/ros/$ROS_DISTRO/setup.bash && \
     catkin_make install -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/opt/ros/$ROS_DISTRO -DCATKIN_ENABLE_TESTING=0 && \
     cd / && rm -r /hsrb_moveit_config
 
-# # install yolov5-jp
-# RUN source /opt/ros/$ROS_DISTRO/setup.bash && \
-#     rm -rf /yolov5_wsf && mkdir -p /yolov5_wsf/src && \
-#     cd /yolov5_wsf/src && \
-#     catkin_init_workspace && \
-#     git clone https://github.com/Jpcaceres/yolov5.git && \
-#     cd .. && \
-#     catkin_make install -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/opt/ros/$ROS_DISTRO -DCATKIN_ENABLE_TESTING=0 && \
-#     cd / && rm -rf /yolov5_wsf
-
 # install libraries
-RUN apt-get install -y ros-melodic-smach ros-melodic-smach-ros python-pip wget unzip python-tk \
-    &&  PYTHONPATH=/usr/bin/python pip install future tqdm torch==1.4.0 torchvision==0.5.0 pathlib==1.0.1 scipy matplotlib --no-cache-dir
+RUN PYTHONPATH=/usr/bin/python pip install future tqdm torch==1.4.0 torchvision==0.5.0 pathlib==1.0.1 scipy matplotlib --no-cache-dir
 
 # install VTK
-#RUN wget http://www.vtk.org/files/release/7.1/VTK-7.1.0.tar.gz && \
-#    tar -xf VTK-7.1.0.tar.gz && \
-#    cd VTK-7.1.0 && mkdir build && cd build && \
-#    cmake .. && \
-#    make -j12 && \
-#    make install && \
-#    cd ..
+RUN wget http://www.vtk.org/files/release/7.1/VTK-7.1.0.tar.gz && \
+   tar -xf VTK-7.1.0.tar.gz && \
+   cd VTK-7.1.0 && mkdir build && cd build && \
+   cmake .. && \
+   make -j12 && \
+   make install && \
+   cd ..
 
 # install PCL    
-#RUN wget https://github.com/PointCloudLibrary/pcl/archive/pcl-1.9.0.tar.gz && \
-#    tar -xf pcl-1.9.0.tar.gz && \
-#    cd pcl-pcl-1.9.0 && mkdir build && cd build && \
-#    cmake -DBUILD_visualization=ON .. && \
-#    make -j12 && \
-#    make install && \ 
-#    ldconfig
+RUN wget https://github.com/PointCloudLibrary/pcl/archive/pcl-1.9.0.tar.gz && \
+   tar -xf pcl-1.9.0.tar.gz && \
+   cd pcl-pcl-1.9.0 && mkdir build && cd build && \
+   cmake -DBUILD_visualization=ON .. && \
+   make -j12 && \
+   make install && \ 
+   ldconfig
 
 # install opencv 3.4
-#RUN wget https://raw.githubusercontent.com/PickNikRobotics/deep_grasp_demo/master/opencv_install.sh && \
-#    chmod +x opencv_install.sh && \
-#    ./opencv_install.sh
+RUN wget https://raw.githubusercontent.com/PickNikRobotics/deep_grasp_demo/master/opencv_install.sh && \
+   chmod +x opencv_install.sh && \
+   ./opencv_install.sh
 
 # install GPD
-#RUN git clone https://github.com/uchile-robotics-forks/gpd.git && \
-#    cd gpd && \
-#    mkdir build && cd build && \
-#    cmake .. && make -j12 && make install 
+RUN git clone https://github.com/uchile-robotics-forks/gpd.git && \
+   cd gpd && \
+   mkdir build && cd build && \
+   cmake .. && make -j12 && make install 
 
 # create workspace folder
 RUN mkdir -p /workspace/src
@@ -79,7 +70,7 @@ ADD . /workspace/src
 # install yolov5 package ros
 RUN cd /workspace/src/ && git clone https://github.com/Jpcaceres/yolov5.git
 
-#RUN apt-get install ros-melodic-pcl-msgs && export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:usr/local/lib && cd /workspace/src/ && git clone https://github.com/uchile-robotics-forks/gpd_ros.git
+RUN cd /workspace/src/ && git clone https://github.com/uchile-robotics-forks/gpd_ros.git && export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:usr/local/lib
 
 # install dependencies defined in package.xml
 RUN cd /workspace && /ros_entrypoint.sh rosdep install --from-paths src --ignore-src -r -y
