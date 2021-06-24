@@ -78,7 +78,9 @@ RUN cd /workspace && /ros_entrypoint.sh rosdep install --from-paths src --ignore
 # compile and install our algorithm
 RUN cd /workspace && /ros_entrypoint.sh catkin_make install -DCMAKE_INSTALL_PREFIX=/opt/ros/$ROS_DISTRO
 
-RUN chmod +x /opt/ros/melodic/lib/python2.7/dist-packages/gpd_ros/ur5.launch
+RUN chmod +x /opt/ros/melodic/lib/python2.7/dist-packages/gpd_ros/ur5.launch && \
+    chmod +x /workspace/src/gpd_ros/src/gpd_ros/grasp_detection_node.cpp && \
+    chmod +x /workspace/src/gpd_ros/src/gpd_ros/grasp_detection_server.cpp
 
 # command to run the algorithm
 CMD roslaunch robocup_challenge run.launch
