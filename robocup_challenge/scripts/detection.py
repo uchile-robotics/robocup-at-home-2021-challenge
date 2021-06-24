@@ -152,7 +152,7 @@ class RGBD():
         lower_hsv = np.array([144, 109, 110])
         upper_hsv = np.array([150, 255, 255])
         mask_piso = 255-cv2.inRange(frame_hsv, lower_hsv, upper_hsv)
-        kernel = np.ones((5,5), np.uint8)
+        kernel = np.ones((7,7), np.uint8)
         mask_piso = cv2.erode(mask_piso, kernel)
 
         result = cv2.bitwise_and(mask_piso, mask_mesa)

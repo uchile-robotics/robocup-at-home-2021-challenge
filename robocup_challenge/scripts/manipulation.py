@@ -51,7 +51,7 @@ class Grasp(smach.State):
         #    utils_hb.move_hand(1.0)
         #else:
         #    utils_hb.move_hand(0.8)
-        w_offset = 0.05
+        w_offset = 0.1
         print('OFFSET: {}'.format(userdata.width.data/0.126))
         final_width = min(userdata.width.data/0.126 + w_offset, 1.0)
         utils_hb.move_hand(final_width)

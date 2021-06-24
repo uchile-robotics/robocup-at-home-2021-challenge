@@ -360,7 +360,7 @@ def getInstance():
         smach.StateMachine.add('GET_POSE', SetPose(vis_model),
             transitions={
                 'succeeded': 'CT3',
-                'failed': 'GET_POSE',
+                'failed': 'CT5',
                 'ban':'CT2'                
             }
         )

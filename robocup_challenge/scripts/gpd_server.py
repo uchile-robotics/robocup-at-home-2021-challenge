@@ -104,9 +104,9 @@ class PostGPD():
         width = gpd_grasp.width
 
         delta = -0.005
-        pp.pose.position.x = pp.pose.position.x + x_approach*delta
-        pp.pose.position.y = pp.pose.position.y + y_approach*delta
-        pp.pose.position.z = pp.pose.position.z + z_approach*delta
+        pp.pose.position.x = pp.pose.position.x + (x_approach)*delta
+        pp.pose.position.y = pp.pose.position.y + (y_approach)*delta
+        pp.pose.position.z = pp.pose.position.z + (z_approach)*delta
 
         ori = tf.transformations.quaternion_from_euler(euler_R[0],euler_R[1],euler_R[2])
         f_rot = tf.transformations.quaternion_from_euler(0, 3*np.pi/2, 0)
