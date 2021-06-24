@@ -42,7 +42,7 @@ class RGBD():
         self.tf_listener = tf2_ros.TransformListener(self.tf_buffer)
 
     
-    def detect(self, sort=True, save=False, segment=True):
+    def detect(self, sort=True):
         """Funcion que retorna 2 listas, una con los xyz de la nube de puntos (ordenadas del más cercano al más lejano si 
         sort = True y una lista con sus labels respectivos.
         """
@@ -86,7 +86,7 @@ class RGBD():
         else:
             return None, None
 
-    def segmentation(self, sort=True):
+    def segmentation(self, selected_object=None, sort=True):
         """Función que retorna la máscara del objeto más cercano.
         Args:
             sort (bool, optional): [Si se desea ordenar del más cercano
@@ -116,7 +116,19 @@ class RGBD():
                     # ordenar los objetos si es necesario
                     _xywh = self.sort_objects(_xywh)
 
-                obj = _xywh[0]  # object nearest
+                if selected_object is None:
+                    obj = _xywh[0]  # object nearest
+                else: # selected object
+                    found_object = False
+                    for i, d in enumerate(_xywh):
+                        if d[4] == selected_object:
+                            obj = d
+                            found_object = True
+                        if found_object:
+                            print('Se encontro el objeto seleccionado')
+                        else:
+                            print('NO se encontro objecto seleccionado')
+
                 mask_obj = self.segmentation_object(obj)
                 return mask_obj
             return None
