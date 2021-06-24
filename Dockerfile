@@ -4,9 +4,9 @@ SHELL [ "/bin/bash", "-c" ]
 
 # install depending packages (install moveit! algorithms on the workspace side, since moveit-commander loads it from the workspace)
 RUN apt-get update -y && \
-    apt-get install -y git ros-$ROS_DISTRO-moveit ros-$ROS_DISTRO-moveit-commander ros-$ROS_DISTRO-move-base-msgs && \
-    ros-$ROS_DISTRO-ros-numpy ros-$ROS_DISTRO-geometry ros-$ROS_DISTRO-smach ros-$ROS_DISTRO-smach-ros python-pip wget unzip python-tk && \
-    ros-$ROS_DISTRO-pcl-msgs ros-$ROS_DISTRO-pcl-conversions && \
+    apt-get install -y git ros-$ROS_DISTRO-moveit ros-$ROS_DISTRO-moveit-commander ros-$ROS_DISTRO-move-base-msgs \
+    ros-$ROS_DISTRO-ros-numpy ros-$ROS_DISTRO-geometry ros-$ROS_DISTRO-smach ros-$ROS_DISTRO-smach-ros python-pip wget unzip python-tk \
+    ros-$ROS_DISTRO-pcl-msgs ros-$ROS_DISTRO-pcl-conversions \
     apt-get clean
 
 # install bio_ik
