@@ -10,6 +10,18 @@ import smach
 import smach_ros
 from geometry_msgs.msg import Pose, WrenchStamped
 import numpy as np
+from moveit_msgs.msg import (
+    RobotTrajectory,
+    PlaceLocation,
+    Constraints,
+    RobotState,
+)
+from moveit_msgs.msg import (
+    MoveItErrorCodes,
+    TrajectoryConstraints,
+    PlannerInterfaceDescription,
+    MotionPlanRequest,
+)
 
 
 class PreGrasp(smach.State):
@@ -17,6 +29,14 @@ class PreGrasp(smach.State):
         smach.State.__init__(self, outcomes=["succeeded"], input_keys=["pre_pose"])
     def execute(self, userdata):
         #Robot movement to pregrasping by IK
+        #constraints = TrajectoryConstraints()
+        #constraints.constraints[0].joint_constraints[0].joint_name = 'arm_roll_joint'
+        #constraints.constraints[0].joint_constraints[0].position = 0
+        #constraints.constraints[0].joint_constraints[0].tolerance_above = 0.2
+        #constraints.constraints[0].joint_constraints[0].tolerance_below = -0.2
+
+        #utils_hb.whole_body.set_trajectory_constraints(constraints)
+
         utils_hb.whole_body.set_pose_target(userdata.pre_pose)
         utils_hb.whole_body.go()
 
@@ -24,17 +44,22 @@ class PreGrasp(smach.State):
 
 class Grasp(smach.State):
     def __init__(self):
-        smach.State.__init__(self, outcomes=["succeeded"], input_keys=["grab_pose", 'floor'])
+        smach.State.__init__(self, outcomes=["succeeded"], input_keys=["grab_pose", 'width'])
     def execute(self, userdata):
         #Robot grasps
         #if userdata.floor:
         #    utils_hb.move_hand(1.0)
         #else:
         #    utils_hb.move_hand(0.8)
-        utils_hb.move_hand(1.0)
+        w_offset = 0.05
+        print('OFFSET: {}'.format(userdata.width.data/0.126))
+        final_width = min(userdata.width.data/0.126 + w_offset, 1.0)
+        utils_hb.move_hand(final_width)
         utils_hb.whole_body.set_pose_target(userdata.grab_pose)
         utils_hb.whole_body.go()
         utils_hb.move_hand(0)
+
+        #utils_hb.whole_body.clear_trajectory_constraints()
 
         return "succeeded"
 
@@ -58,10 +83,11 @@ class Torque(smach.State):
     def __init__(self):
         smach.State.__init__(self, outcomes=["succeeded", 'failed'])
     def execute(self, userdata):
-        wrench_raw = rospy.wait_for_message("/hsrb/wrist_wrench/raw",  WrenchStamped)
-        torque = np.abs(wrench_raw.wrench.torque.x)
-        if torque > 0.5:
-            return "succeeded"
+        for _ in range(5):
+            wrench_raw = rospy.wait_for_message("/hsrb/wrist_wrench/raw",  WrenchStamped)
+            torque = np.abs(wrench_raw.wrench.torque.x)
+            if torque > 0.3:
+                return "succeeded"
         return "failed"
 
 class GetSafe(smach.State):
@@ -77,7 +103,7 @@ class GetSafe(smach.State):
             
 def getInstance():
 
-    sm = smach.StateMachine(outcomes=['succeeded', 'failed'], input_keys=['grab_pose', 'pre_pose', 'object_pose', 'floor'])
+    sm = smach.StateMachine(outcomes=['succeeded', 'failed'], input_keys=['grab_pose', 'pre_pose', 'object_pose', 'width'])
 
     with sm:
 
@@ -89,7 +115,7 @@ def getInstance():
 
         smach.StateMachine.add('GRASP', Grasp(),
             transitions={
-                'succeeded': 'PREGRASP2',         
+                'succeeded': 'NEUTRAL',         
             }
         )
 
@@ -107,7 +133,7 @@ def getInstance():
 
         smach.StateMachine.add('NEUTRAL', Neutral(),
             transitions={
-                'succeeded': 'succeeded'                
+                'succeeded': 'TORQUE'                
             }
         )
 

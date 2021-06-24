@@ -29,20 +29,30 @@ import gpd_server
 
 class Setup(smach.State):
     def __init__(self):
-        smach.State.__init__(self, outcomes=["succeeded", "aborted"])
+        smach.State.__init__(self, outcomes=["succeeded", "aborted"], io_keys=['timer'])
     def execute(self,userdata):
         utils_hb.move_arm_init()
+        userdata.timer = rospy.get_time()
         return 'succeeded'
+
+class CheckTime(smach.State):
+    def __init__(self):
+        smach.State.__init__(self, outcomes=["continue", "finish"], io_keys=['timer'])
+    def execute(self,userdata):
+        actual_time = rospy.get_time()
+        delta = actual_time - userdata.timer
+        print('It has been {} seconds'.format(delta))
+        if delta > 300:
+            return 'finish'
+        return 'continue'
 
 class ResetData(smach.State):
     def __init__(self):
-        smach.State.__init__(self, outcomes=["succeeded"], io_keys=['object_pose', 'grab_pose', 'selected_object', 'floor'])
+        smach.State.__init__(self, outcomes=["succeeded"], io_keys=['object_pose', 'grab_pose', 'selected_object'])
     def execute(self,userdata):
         sm.userdata.grab_pose = tf2_geometry_msgs.PoseStamped()
         sm.userdata.object_pose = []
         sm.userdata.selected_object = ''
-        sm.userdata.floor = False
-        sm.userdata.under = False
         
         return 'succeeded'
 
@@ -104,7 +114,7 @@ class MoveSM(smach.State):
         if self.place == 'PICKUP':
             try:
                 m = utils_hb.Move()
-                m.set_pose(0.8, 0.9, 90)
+                m.set_pose(0.8, 0.7, 90)
                 #m.get_pose()
                 m.go()
             except:
@@ -134,145 +144,80 @@ class MoveSM(smach.State):
 
 class SetPose(smach.State):
     def __init__(self, vision_model):
-        smach.State.__init__(self, outcomes=["succeeded", "failed"], io_keys=['object_pose', 'grab_pose', 'selected_object', 'pre_pose', 'floor', 'under'])
+        smach.State.__init__(self, outcomes=["succeeded", "failed"], io_keys=['object_pose', 'grab_pose', 'selected_object', 'pre_pose', 'width'])
         self.vision_model = vision_model
     def execute(self,userdata):
-        print('&&&&&&&&&&&&&&&&&&&&&&&&&')
-        print(userdata.floor)
-        print(userdata.under)
-        print('&&&&&&&&&&&&&&&&&&&&&&&&&')
         utils_hb.move_arm_init()
-        if userdata.floor or userdata.under:
-            print('yay3')
-             # get updated object pose
-            objects = self.vision_model.detect()
-            print(objects)
+        
+        # check if mask exists
+        obj_mask = self.vision_model.segmentation()
+        print('yay')
 
-            print('CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC')
-            planning_frame = utils_hb.whole_body.get_planning_frame()
-            print("============ Reference frame: {}".format(planning_frame))
+        if obj_mask != []:
+            
+            # create GPD receiver
+            gpd_receiver = gpd_server.PostGPD()
+            print('yay2')
 
-            if objects[-1] != []:
-                try:
-                    obj_index = objects[-1].index(userdata.selected_object)
-                except:
-                    print('object not refound')
-                    return 'failed'
-                selec_pose_raw = objects[0][obj_index]
-                selec_pose = utils_hb.make_pose_from_camera(selec_pose_raw)
+            print('waiting')
+            while not gpd_receiver.get_flag():
+                print('No GPD Answer')
+                rospy.sleep(0.1)
+            print('done waiting')
+            # reset flag
+            gpd_receiver.set_flag(False)
 
-                print(type(selec_pose))
+            # receive best pose
 
-                utils_hb.move_arm_neutral()
-                # transformar a pose para manip
-                if userdata.floor:
-                    grab_pose_precopy = utils_hb.get_pose_relative_coordinate('odom', selec_pose)
-                elif userdata.under:
-                    grab_pose_precopy = utils_hb.get_pose_relative_coordinate('odom', selec_pose)
+            best_pose, pre_grasp, score, width = gpd_receiver.get_best_grasp()
+            userdata.width = width
+            print('###################')
+            print('best pose')
+            print(best_pose)
+            print('score: {}'.format(score))
 
-                userdata.grab_pose = copy.deepcopy(grab_pose_precopy)
-                userdata.grab_pose.pose.position.z += 0.07
+            # preparar mano
+            utils_hb.move_arm_neutral()
 
-                ori = tf.transformations.quaternion_from_euler(np.pi, 0, 0)
-                s_rot = tf.transformations.quaternion_from_euler(0, 0, np.pi/2)
-                f_mul = tf.transformations.quaternion_multiply(ori, s_rot)
-                userdata.grab_pose.pose.orientation.x = f_mul[0]
-                userdata.grab_pose.pose.orientation.y = f_mul[1]
-                userdata.grab_pose.pose.orientation.z = f_mul[2]
-                userdata.grab_pose.pose.orientation.w = f_mul[3]
+            # check pose erronea en camara
+            if best_pose.pose.position.z > 0.8:
+                print('pose en camara')
+                return 'failed'
 
-                pre_grasp = copy.deepcopy(userdata.grab_pose)
-                pre_grasp.pose.position.z = userdata.grab_pose.pose.position.z + 0.15
-                if userdata.floor:
-                    userdata.pre_pose = utils_hb.get_pose_relative_coordinate('odom', pre_grasp)
-                elif userdata.under:
-                    #pre_grasp.pose.position.y = 1.45
-                    userdata.pre_pose = utils_hb.get_pose_relative_coordinate('odom', pre_grasp)
+            # transformar a pose para manip
+            #best_pose.pose.position.z = best_pose.pose.position.z - 0.09
+            try:
+                userdata.grab_pose = utils_hb.get_pose_relative_coordinate('map', best_pose)
+                userdata.pre_pose = utils_hb.get_pose_relative_coordinate('map', pre_grasp)
+            except: 
+                return 'failed'
+            
+            # check por abajo
+            #if userdata.grab_pose.pose.position.z > userdata.pre_pose.pose.position.z:
+            #    print('por abajo')
+            #    return 'failed'
+            
+            utils_hb.rviz_marker('/map', userdata.grab_pose.pose.position.x, userdata.grab_pose.pose.position.y, userdata.grab_pose.pose.position.z)
 
+            print('BBBBBBBBBBBBB')
+            print(userdata.grab_pose) 
+            print('PREEEEEEEEEEEE')
+            print(userdata.pre_pose)  
+            print('BBBBBBBBBBBBB')         
 
-                print(type(userdata.grab_pose))
-                
-                utils_hb.rviz_marker('/odom', userdata.grab_pose.pose.position.x, userdata.grab_pose.pose.position.y, userdata.grab_pose.pose.position.z)
+            pose_pub = rospy.Publisher("/pre_nico", PoseStamped, queue_size=5)
+            rospy.sleep(1)
+            pose_pub.publish(userdata.pre_pose)
 
-                print('BBBBBBBBBBBBB')
-                print(userdata.grab_pose)           
+            pose_pub = rospy.Publisher("/nico", PoseStamped, queue_size=5)
+            rospy.sleep(1)
+            pose_pub.publish(userdata.grab_pose)
 
-                pose_pub = rospy.Publisher("/pre_nico", PoseStamped, queue_size=5)
-                rospy.sleep(1)
-                pose_pub.publish(userdata.pre_pose)
+            #assert(0==1)
 
-                pose_pub = rospy.Publisher("/nico", PoseStamped, queue_size=5)
-                rospy.sleep(1)
-                pose_pub.publish(userdata.grab_pose)
+            return 'succeeded'
 
-                #assert(0==1)
-
-                return 'succeeded'
-
-        else:
-            # check if mask exists
-            obj_mask = self.vision_model.segmentation()
-            print('yay')
-
-            if obj_mask != []:
-                
-                # create GPD receiver
-                gpd_receiver = gpd_server.PostGPD()
-                print('yay2')
-
-                print('sleeping')
-                rospy.sleep(10)
-                print('done sleeping')
-
-                # receive best pose
-                best_pose, pre_grasp, score = gpd_receiver.get_best_grasp()
-                print('###################')
-                print('best pose')
-                print(best_pose)
-                print('score: {}'.format(score))
-
-                # preparar mano
-                utils_hb.move_arm_neutral()
-
-                # check pose erronea en camara
-                if pre_grasp.pose.position.z < 0:
-                    print('pose en camara')
-                    return 'failed'
-
-                # transformar a pose para manip
-                #best_pose.pose.position.z = best_pose.pose.position.z - 0.09
-                try:
-                    userdata.grab_pose = utils_hb.get_pose_relative_coordinate('odom', best_pose)
-                    userdata.pre_pose = utils_hb.get_pose_relative_coordinate('odom', pre_grasp)
-                except: 
-                    return 'failed'
-                
-                # check por abajo
-                if userdata.grab_pose.pose.position.z > userdata.pre_pose.pose.position.z:
-                    print('por abajo')
-                    return 'failed'
-                
-                utils_hb.rviz_marker('/odom', userdata.grab_pose.pose.position.x, userdata.grab_pose.pose.position.y, userdata.grab_pose.pose.position.z)
-
-                print('BBBBBBBBBBBBB')
-                print(userdata.grab_pose) 
-                print('PREEEEEEEEEEEE')
-                print(userdata.pre_pose)  
-                print('BBBBBBBBBBBBB')         
-
-                pose_pub = rospy.Publisher("/pre_nico", PoseStamped, queue_size=5)
-                rospy.sleep(1)
-                pose_pub.publish(userdata.pre_pose)
-
-                pose_pub = rospy.Publisher("/nico", PoseStamped, queue_size=5)
-                rospy.sleep(1)
-                pose_pub.publish(userdata.grab_pose)
-
-                #assert(0==1)
-
-                return 'succeeded'
-
-            return 'failed'
+        return 'failed'
 
 def getInstance():
 
@@ -286,22 +231,29 @@ def getInstance():
     print('CARGANDO MODELO')
     vis_model = detection.RGBD()
 
-    sm = smach.StateMachine(outcomes=['succeeded', 'aborted'])
+    sm = smach.StateMachine(outcomes=['succeeded', 'aborted', 'finish'])
 
     sm.userdata.grab_pose = tf2_geometry_msgs.PoseStamped()
     sm.userdata.pre_pose = tf2_geometry_msgs.PoseStamped()
     sm.userdata.object_pose = []
     sm.userdata.selected_object = ''
-    sm.userdata.floor = False
-    sm.userdata.under = False
     sm.userdata.drop_counter = 0
+    sm.userdata.timer = 0
+    sm.userdata.width = 0
 
     with sm:
 
         smach.StateMachine.add('SETUP', Setup(),
             transitions={
-                'succeeded': 'RESET', 
+                'succeeded': 'CT1', 
                 'aborted': 'aborted'
+            }
+        )
+
+        smach.StateMachine.add('CT1', CheckTime(),
+            transitions={
+                'continue': 'RESET', 
+                'finish': 'finish'
             }
         )
 
@@ -313,28 +265,56 @@ def getInstance():
 
         smach.StateMachine.add('GO_TO_PICKUP', MoveSM('PICKUP'),
             transitions={
-                'succeeded': 'LOOK_OBJECT'                
+                'succeeded': 'CT2'                
+            }
+        )
+
+        smach.StateMachine.add('CT2', CheckTime(),
+            transitions={
+                'continue': 'LOOK_OBJECT', 
+                'finish': 'finish'
             }
         )
 
         smach.StateMachine.add('LOOK_OBJECT', look_object.getInstance(vis_model),
             transitions={
-                'succeeded': 'GET_POSE', 
-                'failed': 'GET_POSE'             
+                'succeeded': 'CT5', 
+                'failed': 'CT5'             
+            }
+        )
+
+        smach.StateMachine.add('CT5', CheckTime(),
+            transitions={
+                'continue': 'GET_POSE', 
+                'finish': 'finish'
             }
         )
 
         smach.StateMachine.add('GET_POSE', SetPose(vis_model),
             transitions={
-                'succeeded': 'GRAB_OBJECT',
+                'succeeded': 'CT3',
                 'failed': 'GET_POSE'                
+            }
+        )
+
+        smach.StateMachine.add('CT3', CheckTime(),
+            transitions={
+                'continue': 'GRAB_OBJECT', 
+                'finish': 'finish'
             }
         )
 
         smach.StateMachine.add('GRAB_OBJECT', manipulation.getInstance(),
             transitions={
-                'succeeded': 'GO_TO_DROP', 
+                'succeeded': 'CT4', 
                 'failed': 'LOOK_OBJECT'               
+            }
+        )
+
+        smach.StateMachine.add('CT4', CheckTime(),
+            transitions={
+                'continue': 'GO_TO_DROP', 
+                'finish': 'finish'
             }
         )
 

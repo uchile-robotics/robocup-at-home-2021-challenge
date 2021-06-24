@@ -84,13 +84,12 @@ def get_pose_relative_coordinate(targ_frame, p):
             trans = tfBuffer.transform(p, targ_frame, rospy.Duration(10.0))
             break
         
-        except (tf2_ros.LookupException, tf2_ros.ConnectivityException,tf2_ros.ExtrapolationException):
+        except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException):
             rospy.loginfo("waiting...")
             rate.sleep()
             continue
 
     return trans
-
 
 arm = moveit_commander.MoveGroupCommander('arm')
 #arm.allow_replanning(True)

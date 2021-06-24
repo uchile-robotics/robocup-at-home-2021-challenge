@@ -12,6 +12,8 @@ import numpy as np
 from sensor_msgs.msg import PointCloud2, Image
 from cv_bridge import CvBridge, CvBridgeError
 from geometry_msgs.msg import TransformStamped
+import tf2_sensor_msgs
+
 
 from yolov5.detect import YoloV5
 
@@ -30,12 +32,15 @@ class RGBD():
         #    "/hsrb/head_rgbd_sensor/depth_registered/rectified_points",
         #    PointCloud2, self._cloud_cb)
         self.pcloud_pub = rospy.Publisher("/hsrb/head_rgbd_sensor/depth_registered/rectified_points_mask", PointCloud2, queue_size=1, latch=True)
+        self.pcloud_pub_rot = rospy.Publisher("/hsrb/head_rgbd_sensor/depth_registered/rectified_points_maskrot", PointCloud2, queue_size=1, latch=True)
         self._points_data = None
         self._image_data = None
         self.xyz = []
         self.labels = []
         self._w_image = 640
         self._h_image = 480
+        self.tf_buffer = tf2_ros.Buffer()
+        self.tf_listener = tf2_ros.TransformListener(self.tf_buffer)
 
     
     def detect(self, sort=True, save=False, segment=True):
@@ -136,7 +141,7 @@ class RGBD():
         lower_hsv = np.array([144, 109, 110])
         upper_hsv = np.array([150, 255, 255])
         mask_piso = 255-cv2.inRange(frame_hsv, lower_hsv, upper_hsv)
-        kernel = np.ones((3, 3), np.uint8)
+        kernel = np.ones((5,5), np.uint8)
         mask_piso = cv2.erode(mask_piso, kernel)
 
         result = cv2.bitwise_and(mask_piso, mask_mesa)
@@ -148,14 +153,41 @@ class RGBD():
         result_y = (self._points_data['y']*frame_mask/255)
         result_z = (self._points_data['z']*frame_mask/255)
 
+        for i in range(self._w_image):
+            for j in range(self._h_image):
+                if abs(result_x[j,i]) < 0.001: 
+                    result_x[j,i] = np.nan
+                if abs(result_y[j,i]) < 0.001:
+                    result_y[j,i] = np.nan
+                if abs(result_z[j,i]) < 0.001: 
+                    result_z[j,i] = np.nan
+
         _point_data['x'] = result_x
         _point_data['y'] = result_y
         _point_data['z'] = result_z
 
         msg = ros_numpy.msgify(PointCloud2, _point_data)
-        msg.header.frame_id = "/head_rgbd_sensor_rgb_frame"
+        msg.header.frame_id = "head_rgbd_sensor_rgb_frame"
         
         self.pcloud_pub.publish(msg)
+
+
+
+        try:
+            trans = self.tf_buffer.lookup_transform('base_link', msg.header.frame_id,
+                                           msg.header.stamp,
+                                           rospy.Duration(1))
+        except tf2_ros.LookupException as ex:
+            rospy.logwarn(ex)
+            return
+        except tf2_ros.ExtrapolationException as ex:
+            rospy.logwarn(ex)
+            return
+
+        cloud_out = tf2_sensor_msgs.tf2_sensor_msgs.do_transform_cloud(msg, trans)
+
+        self.pcloud_pub_rot.publish(cloud_out)
+
         return frame_mask
 
     def sort_objects(self, xy):
