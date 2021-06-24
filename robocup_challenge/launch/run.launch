@@ -1,3 +1,4 @@
 <launch>
+  <include file="$(find gpd_ros)/launch/ur5.launch" />
   <node pkg="robocup_challenge" type="clean_up.py" name="clean_up" output="screen" required="true" />
 </launch>
