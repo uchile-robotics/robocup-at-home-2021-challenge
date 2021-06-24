@@ -12,7 +12,6 @@ import numpy as np
 from sensor_msgs.msg import PointCloud2, Image
 from cv_bridge import CvBridge, CvBridgeError
 from geometry_msgs.msg import TransformStamped
-import tf2_sensor_msgs
 
 
 from yolov5.detect import YoloV5
