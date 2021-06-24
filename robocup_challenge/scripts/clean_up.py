@@ -213,7 +213,7 @@ class SetPose(smach.State):
             gpd_receiver = gpd_server.PostGPD()
             print('yay2')
 
-            timeout = 3
+            timeout = 6
             print('waiting')
             while not gpd_receiver.get_flag():
                 print('No GPD Answer')
