@@ -54,7 +54,6 @@ class ResetData(smach.State):
         sm.userdata.object_pose = []
         sm.userdata.selected_object = ''
         sm.userdata.gpd_tries = 0
-        sm.userdata.banned_items = []
         
         return 'succeeded'
 
@@ -102,7 +101,7 @@ class DropObject(smach.State):
 
 class MoveSM(smach.State):
     def __init__(self, place):
-        smach.State.__init__(self, outcomes=["succeeded"], io_keys=['drop_counter'])
+        smach.State.__init__(self, outcomes=["succeeded", 'failed'], io_keys=['drop_counter'])
         self.place = place
 
     def execute(self,userdata):
@@ -131,7 +130,7 @@ class MoveSM(smach.State):
                 m.go()
             except:
                 rospy.logerr('fail to move')
-                sys.exit()
+                return 'failed'
             userdata.drop_counter += 1
             if userdata.drop_counter > 2:
                 userdata.drop_counter = 0
@@ -205,13 +204,12 @@ class SetPose(smach.State):
         
         # check if mask exists
         obj_mask = self.vision_model.segmentation()
-        print('yay')
+        print('Ban tries: {}'.format(userdata.gpd_tries))
 
         if obj_mask != []:
             
             # create GPD receiver
             gpd_receiver = gpd_server.PostGPD()
-            print('yay2')
 
             timeout = 6
             print('waiting')
@@ -330,9 +328,17 @@ def getInstance():
             }
         )
 
+        smach.StateMachine.add('CT6', CheckTime(),
+            transitions={
+                'continue': 'GO_TO_PICKUP', 
+                'finish': 'finish'
+            }
+        )
+
         smach.StateMachine.add('GO_TO_PICKUP', MoveSM('PICKUP'),
             transitions={
-                'succeeded': 'CT2'                
+                'succeeded': 'CT2', 
+                'failed': 'CT6'               
             }
         )
 
@@ -346,7 +352,7 @@ def getInstance():
         smach.StateMachine.add('LOOK_OBJECT', look_object.getInstance(vis_model),
             transitions={
                 'succeeded': 'CT5', 
-                'failed': 'CT5'             
+                'failed': 'CT2'             
             }
         )
 
@@ -361,7 +367,7 @@ def getInstance():
             transitions={
                 'succeeded': 'CT3',
                 'failed': 'CT5',
-                'ban':'CT2'                
+                'ban':'RESET'                
             }
         )
 
@@ -375,7 +381,7 @@ def getInstance():
         smach.StateMachine.add('GRAB_OBJECT', manipulation.getInstance(),
             transitions={
                 'succeeded': 'CT4', 
-                'failed': 'LOOK_OBJECT'               
+                'failed': 'GO_TO_PICKUP'               
             }
         )
 
@@ -389,7 +395,7 @@ def getInstance():
         smach.StateMachine.add('GO_TO_DROP', GoToGoal(),
             transitions={
                 'succeeded': 'DROP_OBJECT', 
-                'failed': 'GO_TO_DROP'               
+                'failed': 'CT4'               
             }
         )
 

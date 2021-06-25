@@ -87,7 +87,7 @@ class GetCloseObject(smach.State):
 
             utils_hb.rviz_marker('map', map_pose.pose.position.x, map_pose.pose.position.y, map_pose.pose.position.z)
             grab_x = map_pose.pose.position.x + 0.1
-            grab_y = map_pose.pose.position.y - 0.7
+            grab_y = map_pose.pose.position.y - 0.9
 
             print(grab_x)
             print(grab_y)
@@ -118,7 +118,7 @@ def getInstance(vision_model):
         smach.StateMachine.add('FIND_OBJECT', FindObject(vision_model),
             transitions={
                 'succeeded': 'GET_CLOSE', 
-                'failed': 'LOOK_TO',
+                'failed': 'failed',
                 'continue': 'LOOK_TO'           
             }
         )
