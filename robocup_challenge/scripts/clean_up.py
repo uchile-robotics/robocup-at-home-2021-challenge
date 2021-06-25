@@ -81,18 +81,18 @@ class DropObject(smach.State):
         utils_hb.arm.go()
         rospy.sleep(0.1)
         utils_hb.move_hand(1.0)
-        utils_hb.arm.set_joint_value_target([init_height+0.05, -2.1, 0.0, 0.4, 0.0, 0])
-        utils_hb.arm.go()
-        rospy.sleep(0.1)
-        utils_hb.arm.set_joint_value_target([init_height, -2.1, 0.0, 0.4, 0.0, 0])
-        utils_hb.arm.go()
-        rospy.sleep(0.1)
-        utils_hb.arm.set_joint_value_target([init_height+0.05, -2.1, 0.0, 0.4, 0.0, 0])
-        utils_hb.arm.go()
-        rospy.sleep(0.1)
-        utils_hb.arm.set_joint_value_target([init_height, -2.1, 0.0, 0.4, 0.0, 0])
-        utils_hb.arm.go()
-        rospy.sleep(0.1)
+        #utils_hb.arm.set_joint_value_target([init_height+0.05, -2.1, 0.0, 0.4, 0.0, 0])
+        #utils_hb.arm.go()
+        #rospy.sleep(0.1)
+        #utils_hb.arm.set_joint_value_target([init_height, -2.1, 0.0, 0.4, 0.0, 0])
+        #utils_hb.arm.go()
+        #rospy.sleep(0.1)
+        #utils_hb.arm.set_joint_value_target([init_height+0.05, -2.1, 0.0, 0.4, 0.0, 0])
+        #utils_hb.arm.go()
+        #rospy.sleep(0.1)
+        #utils_hb.arm.set_joint_value_target([init_height, -2.1, 0.0, 0.4, 0.0, 0])
+        #utils_hb.arm.go()
+        #rospy.sleep(0.1)
         utils_hb.move_arm_neutral()
         utils_hb.move_hand(0.0)
 
@@ -203,7 +203,7 @@ class SetPose(smach.State):
         utils_hb.move_arm_init()
         
         # check if mask exists
-        obj_mask = self.vision_model.segmentation()
+        obj_mask = self.vision_model.segmentation(userdata.selected_object)
         print('Ban tries: {}'.format(userdata.gpd_tries))
 
         if obj_mask != []:
@@ -305,6 +305,9 @@ def getInstance():
     sm.userdata.width = 0
     sm.userdata.gpd_tries = 0
     sm.userdata.ban_list = ["nine_hole_peg_test","dice","chain","skillet"]
+    sm.userdata.simple_flag = True
+    sm.userdata.front_flag = False
+    sm.userdata.floor = False
 
     with sm:
 
@@ -380,7 +383,7 @@ def getInstance():
 
         smach.StateMachine.add('GRAB_OBJECT', manipulation.getInstance(),
             transitions={
-                'succeeded': 'CT4', 
+                'succeeded': 'GO_TO_DROP', 
                 'failed': 'GO_TO_PICKUP'               
             }
         )

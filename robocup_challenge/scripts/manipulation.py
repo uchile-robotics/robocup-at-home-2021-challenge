@@ -26,7 +26,7 @@ from moveit_msgs.msg import (
 
 class PreGrasp(smach.State):
     def __init__(self):
-        smach.State.__init__(self, outcomes=["succeeded"], input_keys=["pre_pose"])
+        smach.State.__init__(self, outcomes=["succeeded"], input_keys=["pre_pose", 'width'])
     def execute(self, userdata):
         #Robot movement to pregrasping by IK
         #constraints = TrajectoryConstraints()
@@ -36,7 +36,7 @@ class PreGrasp(smach.State):
         #constraints.constraints[0].joint_constraints[0].tolerance_below = -0.2
 
         #utils_hb.whole_body.set_trajectory_constraints(constraints)
-
+        utils_hb.move_hand(1)
         utils_hb.whole_body.set_pose_target(userdata.pre_pose)
         utils_hb.whole_body.go()
 
@@ -51,20 +51,20 @@ class Grasp(smach.State):
         #    utils_hb.move_hand(1.0)
         #else:
         #    utils_hb.move_hand(0.8)
-        if userdata.simple_flag:
-            final_width = 1.0
-            utils_hb.move_hand(final_width)
-            utils_hb.whole_body.set_pose_target(userdata.grab_pose)
-            utils_hb.whole_body.go()
-            utils_hb.move_hand(0)
-        else:
-            w_offset = 0.1
-            print('OFFSET: {}'.format(userdata.width.data/0.126))
-            final_width = min(userdata.width.data/0.126 + w_offset, 1.0)
-            utils_hb.move_hand(final_width)
-            utils_hb.whole_body.set_pose_target(userdata.grab_pose)
-            utils_hb.whole_body.go()
-            utils_hb.move_hand(max(userdata.width.data/0.126 - 5*w_offset, 0))
+        #if userdata.simple_flag:
+        #    final_width = 1.0
+        #    utils_hb.move_hand(final_width)
+        #    utils_hb.whole_body.set_pose_target(userdata.grab_pose)
+        #    utils_hb.whole_body.go()
+        #    utils_hb.move_hand(0)
+        #else:
+        w_offset = 0.1
+        print('OFFSET: {}'.format(userdata.width.data/0.126))
+        final_width = min(userdata.width.data/0.126 + w_offset, 1.0)
+        utils_hb.move_hand(final_width)
+        utils_hb.whole_body.set_pose_target(userdata.grab_pose)
+        utils_hb.whole_body.go()
+        utils_hb.move_hand(max(userdata.width.data/0.126 - 5*w_offset, 0))
 
         #utils_hb.whole_body.clear_trajectory_constraints()
 
@@ -136,7 +136,7 @@ def getInstance():
 
         smach.StateMachine.add('PREGRASP2', PreGrasp(),
             transitions={
-                'succeeded': 'SAFE',         
+                'succeeded': 'NEUTRAL',         
             }
         )
         
