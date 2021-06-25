@@ -54,6 +54,7 @@ class ResetData(smach.State):
         sm.userdata.object_pose = []
         sm.userdata.selected_object = ''
         sm.userdata.gpd_tries = 0
+        sm.userdata.look_tries = 0
         
         return 'succeeded'
 
@@ -93,7 +94,7 @@ class DropObject(smach.State):
         #utils_hb.arm.set_joint_value_target([init_height, -2.1, 0.0, 0.4, 0.0, 0])
         #utils_hb.arm.go()
         #rospy.sleep(0.1)
-        utils_hb.move_arm_neutral()
+        utils_hb.move_arm_init()
         utils_hb.move_hand(0.0)
 
 
@@ -101,7 +102,7 @@ class DropObject(smach.State):
 
 class MoveSM(smach.State):
     def __init__(self, place):
-        smach.State.__init__(self, outcomes=["succeeded", 'failed'], io_keys=['drop_counter'])
+        smach.State.__init__(self, outcomes=["succeeded", 'failed'], io_keys=['goal_counter'])
         self.place = place
 
     def execute(self,userdata):
@@ -109,33 +110,20 @@ class MoveSM(smach.State):
         start = rospy.get_time()
         
         if self.place == 'PICKUP':
+            goal_poses = [[0.8, 0.2, 90],
+                        [0.2, 0.2, 90]]
+            goal_pose = goal_poses[userdata.goal_counter]
             try:
                 m = utils_hb.Move()
-                m.set_pose(0.8, 0.5, 90)
-                #m.get_pose()
-                m.go()
-            except:
-                rospy.logerr('fail to move')
-                sys.exit()
-
-        if self.place == 'DROP':
-            drop_poses = [[1.8, 0.0, -90],
-                        [1.6, 0.0, -90],
-                        [1.4, 0.0, -90]]
-            drop_pose = drop_poses[userdata.drop_counter]
-            try:
-                m = utils_hb.Move()
-                m.set_pose(drop_pose[0], drop_pose[1], drop_pose[2])
+                m.set_pose(goal_pose[0], goal_pose[1], goal_pose[2])
                 #m.get_pose()
                 m.go()
             except:
                 rospy.logerr('fail to move')
                 return 'failed'
-            userdata.drop_counter += 1
-            if userdata.drop_counter > 2:
-                userdata.drop_counter = 0
-
-        print(start-rospy.get_time())
+            userdata.goal_counter += 1
+            if userdata.goal_counter == 2:
+                userdata.goal_counter = 0
 
         return 'succeeded'
 
@@ -156,9 +144,9 @@ class GoToGoal(smach.State):
 
         if object_p in self.food_items:
             _class = 'food_items'
-            drop_poses = [[1.8, 0.0, -90],
-                    [1.6, 0.0, -90],
-                    [1.4, 0.0, -90]]
+            drop_poses = [[1.9, 0.0, -90],
+                    [1.7, 0.0, -90],
+                    [1.5, 0.0, -90]]
             drop_pose = drop_poses[userdata.drop_counter]
             userdata.drop_counter += 1
             if userdata.drop_counter > 2:
@@ -197,7 +185,7 @@ class GoToGoal(smach.State):
 
 class SetPose(smach.State):
     def __init__(self, vision_model):
-        smach.State.__init__(self, outcomes=["succeeded", "failed", 'ban'], io_keys=['object_pose', 'grab_pose', 'selected_object', 'pre_pose', 'width', 'gpd_tries', 'ban_list'])
+        smach.State.__init__(self, outcomes=["succeeded", "failed", 'ban', 'retry'], io_keys=['object_pose', 'grab_pose', 'selected_object', 'pre_pose', 'width', 'gpd_tries', 'ban_list'])
         self.vision_model = vision_model
     def execute(self,userdata):
         utils_hb.move_arm_init()
@@ -206,17 +194,20 @@ class SetPose(smach.State):
         obj_mask = self.vision_model.segmentation(userdata.selected_object)
         print('Ban tries: {}'.format(userdata.gpd_tries))
 
-        if obj_mask != []:
+        if obj_mask == 'retry':
+            return 'retry'
+
+        if not obj_mask is None:
             
             # create GPD receiver
             gpd_receiver = gpd_server.PostGPD()
 
-            timeout = 6
+            timeout = 10
             print('waiting')
             while not gpd_receiver.get_flag():
                 print('No GPD Answer')
-                rospy.sleep(0.1)
-                timeout -= 0.1
+                rospy.sleep(0.2)
+                timeout -= 0.2
                 if timeout < 0:
                     userdata.gpd_tries += 1
                     if userdata.gpd_tries == 3:
@@ -301,10 +292,12 @@ def getInstance():
     sm.userdata.object_pose = []
     sm.userdata.selected_object = ''
     sm.userdata.drop_counter = 0
+    sm.userdata.goal_counter = 0
     sm.userdata.timer = 0
     sm.userdata.width = 0
     sm.userdata.gpd_tries = 0
-    sm.userdata.ban_list = ["nine_hole_peg_test","dice","chain","skillet"]
+    sm.userdata.look_tries = 0
+    sm.userdata.ban_list = ["nine_hole_peg_test","dice","chain","skillet","spatula"]
     sm.userdata.simple_flag = True
     sm.userdata.front_flag = False
     sm.userdata.floor = False
@@ -355,7 +348,8 @@ def getInstance():
         smach.StateMachine.add('LOOK_OBJECT', look_object.getInstance(vis_model),
             transitions={
                 'succeeded': 'CT5', 
-                'failed': 'CT2'             
+                'failed': 'CT2', 
+                'continue': 'RESET'             
             }
         )
 
@@ -370,7 +364,8 @@ def getInstance():
             transitions={
                 'succeeded': 'CT3',
                 'failed': 'CT5',
-                'ban':'RESET'                
+                'ban':'RESET', 
+                'retry': 'RESET'                
             }
         )
 

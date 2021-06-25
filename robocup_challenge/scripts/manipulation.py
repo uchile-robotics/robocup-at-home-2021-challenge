@@ -25,8 +25,9 @@ from moveit_msgs.msg import (
 
 
 class PreGrasp(smach.State):
-    def __init__(self):
+    def __init__(self, open=True):
         smach.State.__init__(self, outcomes=["succeeded"], input_keys=["pre_pose", 'width'])
+        self.open = open
     def execute(self, userdata):
         #Robot movement to pregrasping by IK
         #constraints = TrajectoryConstraints()
@@ -36,7 +37,8 @@ class PreGrasp(smach.State):
         #constraints.constraints[0].joint_constraints[0].tolerance_below = -0.2
 
         #utils_hb.whole_body.set_trajectory_constraints(constraints)
-        utils_hb.move_hand(1)
+        if self.open:
+            utils_hb.move_hand(1)
         utils_hb.whole_body.set_pose_target(userdata.pre_pose)
         utils_hb.whole_body.go()
 
@@ -134,7 +136,7 @@ def getInstance():
             }
         )
 
-        smach.StateMachine.add('PREGRASP2', PreGrasp(),
+        smach.StateMachine.add('PREGRASP2', PreGrasp(open=False),
             transitions={
                 'succeeded': 'NEUTRAL',         
             }

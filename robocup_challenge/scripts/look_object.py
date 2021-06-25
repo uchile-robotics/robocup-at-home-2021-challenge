@@ -49,7 +49,7 @@ class LookTo(smach.State):
 
 class FindObject(smach.State):
     def __init__(self, vision_model):
-        smach.State.__init__(self, outcomes=["succeeded", "failed", "continue"], io_keys=['counter', 'object_pose', 'selected_object', 'ban_list'])
+        smach.State.__init__(self, outcomes=["succeeded", "failed", "continue"], io_keys=['counter', 'object_pose', 'selected_object', 'ban_list', 'look_tries'])
         self.vision_model = vision_model
     def execute(self,userdata):
         print('Looking For Object')
@@ -70,6 +70,9 @@ class FindObject(smach.State):
                 print('item is banned')
 
         print('Object not found')
+        userdata.look_tries += 1
+        if userdata.look_tries == 5:
+            return 'continue'
         return 'failed'
         
 
@@ -107,7 +110,7 @@ class GetCloseObject(smach.State):
 
 def getInstance(vision_model):
 
-    sm = smach.StateMachine(outcomes=['succeeded', 'failed'], input_keys=['object_pose', 'selected_object', 'ban_list', 'floor'], output_keys=['object_pose', 'selected_object', 'floor'])
+    sm = smach.StateMachine(outcomes=['succeeded', 'failed', 'continue'], input_keys=['object_pose', 'selected_object', 'ban_list', 'floor', 'look_tries'], output_keys=['object_pose', 'selected_object', 'floor', 'look_tries'])
     sm.userdata.counter = 0
 
     with sm:
@@ -122,7 +125,7 @@ def getInstance(vision_model):
             transitions={
                 'succeeded': 'GET_CLOSE', 
                 'failed': 'failed',
-                'continue': 'LOOK_TO'           
+                'continue': 'continue'           
             }
         )
 
