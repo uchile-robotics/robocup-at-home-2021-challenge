@@ -51,7 +51,7 @@ RUN wget https://github.com/PointCloudLibrary/pcl/archive/pcl-1.9.0.tar.gz && \
    ldconfig
 
 # install opencv 3.4
-RUN wget https://raw.githubusercontent.com/PickNikRobotics/deep_grasp_demo/master/opencv_install.sh && \
+RUN wget https://raw.githubusercontent.com/uchile-robotics-forks/gpd_ros/master/opencv_install.sh && \
    chmod +x opencv_install.sh && \
    ./opencv_install.sh
 
