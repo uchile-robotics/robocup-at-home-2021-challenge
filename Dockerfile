@@ -72,17 +72,13 @@ RUN cd /workspace/src/ && git clone https://github.com/Jpcaceres/yolov5.git
 
 RUN cd /workspace/src/ && git clone https://github.com/uchile-robotics-forks/gpd_ros.git && export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:usr/local/lib && cd gpd_ros
 
-RUN cd /workspace && /ros_entrypoint.sh catkin_make
-
 # install dependencies defined in package.xml
 RUN cd /workspace && /ros_entrypoint.sh rosdep install --from-paths src --ignore-src -r -y
 
 # compile and install our algorithm
 RUN cd /workspace && /ros_entrypoint.sh catkin_make install -DCMAKE_INSTALL_PREFIX=/opt/ros/$ROS_DISTRO
 
-RUN chmod +x /opt/ros/melodic/lib/python2.7/dist-packages/gpd_ros/ur5.launch && \
-    chmod +x /workspace/src/gpd_ros/src/gpd_ros/grasp_detection_node.cpp && \
-    chmod +x /workspace/src/gpd_ros/src/gpd_ros/grasp_detection_server.cpp
+RUN chmod +x /opt/ros/melodic/lib/python2.7/dist-packages/gpd_ros/ur5.launch
 
 # command to run the algorithm
 CMD roslaunch robocup_challenge run.launch
