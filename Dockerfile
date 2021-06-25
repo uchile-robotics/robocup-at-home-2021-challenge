@@ -72,6 +72,8 @@ RUN cd /workspace/src/ && git clone https://github.com/Jpcaceres/yolov5.git
 
 RUN cd /workspace/src/ && git clone https://github.com/uchile-robotics-forks/gpd_ros.git && export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:usr/local/lib && cd gpd_ros
 
+RUN cd /workspace && /ros_entrypoint.sh catkin_make
+
 # install dependencies defined in package.xml
 RUN cd /workspace && /ros_entrypoint.sh rosdep install --from-paths src --ignore-src -r -y
 
