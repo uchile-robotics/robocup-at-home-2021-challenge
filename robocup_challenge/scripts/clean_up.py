@@ -110,10 +110,11 @@ class MoveSM(smach.State):
         start = rospy.get_time()
         
         if self.place == 'PICKUP':
-            goal_poses = [[0.8, 0.2, 90],
-                        [0.2, 0.2, 90]]
+            goal_poses = [[0.8, 0.2, 90, -0.8],
+                        [0.2, 0.2, 90, -0.8]]
             goal_pose = goal_poses[userdata.goal_counter]
             try:
+                utils_hb.move_head_tilt(goal_pose[3])
                 m = utils_hb.Move()
                 m.set_pose(goal_pose[0], goal_pose[1], goal_pose[2])
                 #m.get_pose()
@@ -363,7 +364,7 @@ def getInstance():
         smach.StateMachine.add('GET_POSE', SetPose(vis_model),
             transitions={
                 'succeeded': 'CT3',
-                'failed': 'CT5',
+                'failed': 'RESET',
                 'ban':'RESET', 
                 'retry': 'RESET'                
             }

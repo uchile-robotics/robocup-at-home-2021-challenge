@@ -23,7 +23,7 @@ class LookTo(smach.State):
     def __init__(self):
         smach.State.__init__(self, outcomes=["succeeded"], io_keys=['counter'])
     def execute(self,userdata):
-        userdata.counter = 0
+        userdata.counter = 10
         utils_hb.move_arm_init()
         if userdata.counter == 0:
             utils_hb.move_head_tilt(-0.8)
