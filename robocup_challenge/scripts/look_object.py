@@ -75,7 +75,7 @@ class FindObject(smach.State):
 
 class GetCloseObject(smach.State):
     def __init__(self):
-        smach.State.__init__(self, outcomes=["succeeded"], input_keys=['object_pose'])
+        smach.State.__init__(self, outcomes=["succeeded"], input_keys=['object_pose', 'floor'], output_keys=['floor'])
 
     def execute(self,userdata):
         print('Getting Close to Object')
@@ -88,6 +88,9 @@ class GetCloseObject(smach.State):
             utils_hb.rviz_marker('map', map_pose.pose.position.x, map_pose.pose.position.y, map_pose.pose.position.z)
             grab_x = map_pose.pose.position.x + 0.1
             grab_y = map_pose.pose.position.y - 0.9
+
+            if grab_y + 0.9 > 1.6 and map_pose.pose.position.z < 0.8:
+                userdata.floor = True
 
             print(grab_x)
             print(grab_y)
@@ -104,7 +107,7 @@ class GetCloseObject(smach.State):
 
 def getInstance(vision_model):
 
-    sm = smach.StateMachine(outcomes=['succeeded', 'failed'], input_keys=['object_pose', 'selected_object', 'ban_list'], output_keys=['object_pose', 'selected_object'])
+    sm = smach.StateMachine(outcomes=['succeeded', 'failed'], input_keys=['object_pose', 'selected_object', 'ban_list', 'floor'], output_keys=['object_pose', 'selected_object', 'floor'])
     sm.userdata.counter = 0
 
     with sm:

@@ -9,6 +9,7 @@ catkin_package(
 install(PROGRAMS
   scripts/utils_hb.py
   scripts/clean_up.py
+  scripts/clean_up_simple.py
   scripts/look_object.py
   scripts/detection.py
   scripts/manipulation.py

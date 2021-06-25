@@ -103,7 +103,7 @@ class PostGPD():
 
         width = gpd_grasp.width
 
-        delta = -0.005
+        delta = 0
         pp.pose.position.x = pp.pose.position.x + (x_approach)*delta
         pp.pose.position.y = pp.pose.position.y + (y_approach)*delta
         pp.pose.position.z = pp.pose.position.z + (z_approach)*delta

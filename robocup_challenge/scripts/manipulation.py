@@ -44,20 +44,27 @@ class PreGrasp(smach.State):
 
 class Grasp(smach.State):
     def __init__(self):
-        smach.State.__init__(self, outcomes=["succeeded"], input_keys=["grab_pose", 'width'])
+        smach.State.__init__(self, outcomes=["succeeded"], input_keys=["grab_pose", 'width', 'simple_flag'])
     def execute(self, userdata):
         #Robot grasps
         #if userdata.floor:
         #    utils_hb.move_hand(1.0)
         #else:
         #    utils_hb.move_hand(0.8)
-        w_offset = 0.1
-        print('OFFSET: {}'.format(userdata.width.data/0.126))
-        final_width = min(userdata.width.data/0.126 + w_offset, 1.0)
-        utils_hb.move_hand(final_width)
-        utils_hb.whole_body.set_pose_target(userdata.grab_pose)
-        utils_hb.whole_body.go()
-        utils_hb.move_hand(max(userdata.width.data/0.126 - 5*w_offset, 0))
+        if userdata.simple_flag:
+            final_width = 1.0
+            utils_hb.move_hand(final_width)
+            utils_hb.whole_body.set_pose_target(userdata.grab_pose)
+            utils_hb.whole_body.go()
+            utils_hb.move_hand(0)
+        else:
+            w_offset = 0.1
+            print('OFFSET: {}'.format(userdata.width.data/0.126))
+            final_width = min(userdata.width.data/0.126 + w_offset, 1.0)
+            utils_hb.move_hand(final_width)
+            utils_hb.whole_body.set_pose_target(userdata.grab_pose)
+            utils_hb.whole_body.go()
+            utils_hb.move_hand(max(userdata.width.data/0.126 - 5*w_offset, 0))
 
         #utils_hb.whole_body.clear_trajectory_constraints()
 
@@ -83,15 +90,18 @@ class Torque(smach.State):
     def __init__(self):
         smach.State.__init__(self, outcomes=["succeeded", 'failed'])
     def execute(self, userdata):
-        torque_counter = 0
-        for _ in range(5):
+        #torque_counter = 0
+        for _ in range(10):
             wrench_raw = rospy.wait_for_message("/hsrb/wrist_wrench/raw",  WrenchStamped)
             torque = np.abs(wrench_raw.wrench.torque.x)
-            if torque > 0.4:
-                torque_counter += 1
-        print('torque counter: {}'.format(torque_counter))
-        if torque_counter > 3:
-            return "succeeded"
+            print(torque)
+            if torque > 0.2:
+        #        torque_counter += 1
+                return "succeeded"
+            rospy.sleep(0.1)
+        #print('torque counter: {}'.format(torque_counter))
+        #if torque_counter >= 4:
+            
 
         return "failed"
 
@@ -103,12 +113,12 @@ class GetSafe(smach.State):
         print('Getting Safe')
         start_time = utils_hb.get_current_time_sec()  
         while utils_hb.get_current_time_sec() - start_time < 1:  
-            utils_hb.move_base_vel(-0.1, 0, 0)
+            utils_hb.move_base_vel(-0.2, 0, 0)
         return 'succeeded'
             
 def getInstance():
 
-    sm = smach.StateMachine(outcomes=['succeeded', 'failed'], input_keys=['grab_pose', 'pre_pose', 'object_pose', 'width'])
+    sm = smach.StateMachine(outcomes=['succeeded', 'failed'], input_keys=['grab_pose', 'pre_pose', 'object_pose', 'width', 'simple_flag'])
 
     with sm:
 
@@ -120,7 +130,7 @@ def getInstance():
 
         smach.StateMachine.add('GRASP', Grasp(),
             transitions={
-                'succeeded': 'SAFE',         
+                'succeeded': 'PREGRASP2',         
             }
         )
 

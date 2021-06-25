@@ -1,4 +1,4 @@
 <launch>
   <include file="/opt/ros/melodic/lib/python2.7/dist-packages/gpd_ros/ur5.launch" />
-  <node pkg="robocup_challenge" type="clean_up.py" name="clean_up" output="screen" required="true" />
+  <node pkg="robocup_challenge" type="clean_up_simple.py" name="clean_up" output="screen" required="true" />
 </launch>
