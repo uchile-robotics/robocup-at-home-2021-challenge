@@ -152,14 +152,18 @@ class RGBD():
         lower_hsv = np.array([144, 109, 110])
         upper_hsv = np.array([150, 255, 255])
         mask_piso = 255-cv2.inRange(frame_hsv, lower_hsv, upper_hsv)
-        kernel = np.ones((5, 5), np.uint8)
+        kernel = np.ones((5,5), np.uint8)
         mask_piso = cv2.erode(mask_piso, kernel)
 
+        # valores para pared RGB
+        lower_rgb = np.array([29,29,29])
+        upper_rgb = np.array([32,32,32])
+        mask_pared = 255-cv2.inRange(frame_obj, lower_rgb, upper_rgb)
+
         result = cv2.bitwise_and(mask_piso, mask_mesa)
+        result = cv2.bitwise_and(result, mask_pared)
         frame_mask[int(y-h/2):int(y+h/2), int(x-w/2):int(x+w/2)] = result
-        # cv2.imshow('result', frame_mask)
-        # cv2.imshow('frame', frame_rgb)
-        # cv2.waitKey(1)
+        
         result_x = (self._points_data['x']*frame_mask/255)
         result_y = (self._points_data['y']*frame_mask/255)
         result_z = (self._points_data['z']*frame_mask/255)
