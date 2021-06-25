@@ -115,7 +115,8 @@ class RGBD():
                 if sort:
                     # ordenar los objetos si es necesario
                     _xywh = self.sort_objects(_xywh)
-
+                
+                obj = None
                 if selected_object is None:
                     obj = _xywh[0]  # object nearest
                 else: # selected object
@@ -128,7 +129,8 @@ class RGBD():
                             print('Se encontro el objeto seleccionado')
                         else:
                             print('NO se encontro objecto seleccionado')
-
+                    if obj is None:
+                        return "retry"
                 mask_obj = self.segmentation_object(obj)
                 return mask_obj
             return None
