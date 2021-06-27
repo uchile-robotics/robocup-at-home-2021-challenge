@@ -146,7 +146,10 @@ class MoveSM(smach.State):
         if self.place == 'PICKUP':
 
             if userdata.forward_counter > 3:
-                y_pos = 0.5
+                if userdata.goal_counter == 0:
+                    y_pos = 0.75
+                else:
+                    y_pos = 0.95
             else:
                 y_pos = 0.2
 
@@ -345,7 +348,7 @@ def getInstance():
     sm.userdata.width = 0
     sm.userdata.gpd_tries = 0
     sm.userdata.look_tries = 0
-    sm.userdata.ban_list = ["nine_hole_peg_test","dice","chain","skillet","spatula"]
+    sm.userdata.ban_list = ["nine_hole_peg_test","dice","chain","skillet","spatula", "person"]
     sm.userdata.simple_flag = True
     sm.userdata.front_flag = False
     sm.userdata.floor = False

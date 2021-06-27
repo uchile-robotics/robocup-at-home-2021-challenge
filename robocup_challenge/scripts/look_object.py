@@ -80,7 +80,7 @@ class FindObject(smach.State):
 
 class GetCloseObject(smach.State):
     def __init__(self, buffer):
-        smach.State.__init__(self, outcomes=["succeeded"], input_keys=['object_pose', 'floor'], output_keys=['floor'])
+        smach.State.__init__(self, outcomes=["succeeded", 'failed'], input_keys=['object_pose', 'floor', 'ban_list', 'selected_object'], output_keys=['floor', 'ban_list'])
         self.buffer = buffer
 
     def execute(self,userdata):
@@ -94,13 +94,14 @@ class GetCloseObject(smach.State):
             utils_hb.rviz_marker('map', map_pose.pose.position.x, map_pose.pose.position.y, map_pose.pose.position.z)
             grab_x = map_pose.pose.position.x 
             grab_y = map_pose.pose.position.y - 0.7
-            if grab_y + 0.9 > 1.6 and map_pose.pose.position.z < 0.8:
+            if grab_y + 0.7 > 1.6 and map_pose.pose.position.z < 0.3:
+                userdata.ban_list.append(userdata.selected_object)
                 userdata.floor = True
+                return 'failed'
             print(grab_x)
             print(grab_y)
             m = utils_hb.Move()
             m.set_pose(grab_x, grab_y, 90)
-
 
             #m.get_pose()
             m.go()
@@ -108,7 +109,8 @@ class GetCloseObject(smach.State):
             rospy.sleep(0.1)
         except:
             rospy.logerr('fail to move')
-            sys.exit()
+            return 'failed'
+
         return 'succeeded'
 
 def getInstance(vision_model, buffer):
@@ -134,7 +136,8 @@ def getInstance(vision_model, buffer):
 
         smach.StateMachine.add('GET_CLOSE', GetCloseObject(buffer),
             transitions={
-                'succeeded': 'succeeded'                
+                'succeeded': 'succeeded', 
+                'failed': 'continue'                
             }
         )
 

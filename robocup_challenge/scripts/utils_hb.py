@@ -11,6 +11,7 @@ import moveit_commander
 import tf2_ros
 import tf, tf2_geometry_msgs
 from visualization_msgs.msg import Marker
+from moveit_msgs.msg import Constraints, JointConstraint
 
 class Move():
     def __init__(self):
@@ -98,6 +99,27 @@ whole_body.set_workspace([-9.0, -9.0, 9.0, 9.0])
 whole_body.set_planning_time(20)
 whole_body.set_num_planning_attempts(10)
 whole_body.set_planner_id('BKPIECEkConfigDefault')
+
+
+def constraint_base():
+    c = Constraints()
+    c.name = 'pose_constraint'
+    joint_c = JointConstraint()
+    joint_c.joint_name = 'odom_r'
+
+    odom_r_joint = whole_body.get_current_joint_values()[2]
+    print('odom r: {}'.format(odom_r_joint))
+
+    pos_var = odom_r_joint
+    tolerance = 0.3
+
+    joint_c.position = pos_var
+    joint_c.tolerance_above = pos_var + tolerance
+    joint_c.tolerance_below = pos_var - tolerance
+    joint_c.weight = 100.0
+    c.joint_constraints.append(joint_c)
+    whole_body.set_path_constraints(c)
+    
 
 def move_arm_ik(x, y, z, roll, pitch, yaw):
 
