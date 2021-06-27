@@ -15,6 +15,7 @@ class PostGPD():
     def __init__(self):
         self.pub = rospy.Publisher("/jp", tf2_geometry_msgs.PoseStamped, queue_size=1)
         self.pub_grasp = rospy.Publisher("/jp_grasp", PointCloud, queue_size=1)
+        self.chosen_pub = rospy.Publisher("/chosen", PointCloud, queue_size=1)
         self.p = tf2_geometry_msgs.PoseStamped()
         self.pp_pre = tf2_geometry_msgs.PoseStamped()
         self.score = 0
@@ -43,6 +44,10 @@ class PostGPD():
             jp_cloud.header.frame_id = 'base_link'
             jp_cloud.header.stamp = rospy.Time.now()
 
+            chosen = PointCloud()
+            chosen.header.frame_id = 'base_link'
+            chosen.header.stamp = rospy.Time.now()
+
             for grasp in gpd_message.grasps:
                 point = Point32()
                 point.x = grasp.position.x
@@ -58,8 +63,21 @@ class PostGPD():
                 if grasp.approach.x >= 0 and grasp.approach.z <= 0:
                     print('changed best grasp')
                     best_grasp = copy.deepcopy(grasp)
+
+                    point_chosen = Point32()
+                    point_chosen.x = best_grasp.position.x
+                    point_chosen.y = best_grasp.position.y
+                    point_chosen.z = best_grasp.position.z
+                    chosen.points.append(point_chosen)
+                    print('POINT CHOSEN')
+                    print(point_chosen)
+                    print('POINT CHOSEN')
+
                     self.score = best_grasp.score
                     break
+
+            self.chosen_pub.publish(chosen)
+
             
             self.p = tf2_geometry_msgs.PoseStamped()
             print(self.p)
@@ -80,6 +98,11 @@ class PostGPD():
         #R = [[x_axis,x_binormal,x_approach], 
         #    [y_axis,y_binormal,y_approach], 
         #    [z_axis,z_binormal,z_approach]]
+        #if z_axis < 0:
+        #    R = [[x_axis,-x_binormal,-x_approach], 
+        #        [y_axis,-y_binormal,-y_approach], 
+        #        [z_axis,-z_binormal,-z_approach]]
+        #else:
         R = [[-x_axis,x_binormal,x_approach], 
             [-y_axis,y_binormal,y_approach], 
             [-z_axis,z_binormal,z_approach]]
@@ -96,6 +119,8 @@ class PostGPD():
         R = np.asarray(R)
         euler_R = tf.transformations.euler_from_matrix(R)
 
+        #ori_try = tf.transformations.quaternion_from_matrix(R)
+
         pp = tf2_geometry_msgs.PoseStamped()
 
         pp.header.frame_id = "base_link"
@@ -104,16 +129,32 @@ class PostGPD():
         width = gpd_grasp.width
 
         delta = 0
-        pp.pose.position.x = pp.pose.position.x + x_approach*delta
-        pp.pose.position.y = pp.pose.position.y + y_approach*delta
-        pp.pose.position.z = pp.pose.position.z + z_approach*delta
+        #pp.pose.position.x = pp.pose.position.x + x_approach*delta
+        #pp.pose.position.y = pp.pose.position.y + y_approach*delta
+        #pp.pose.position.z = pp.pose.position.z + z_approach*delta
+
+        pp.pose.position.x = pp.pose.position.x 
+        pp.pose.position.y = pp.pose.position.y 
+        pp.pose.position.z = pp.pose.position.z
 
         ori = tf.transformations.quaternion_from_euler(euler_R[0],euler_R[1],euler_R[2])
-        f_rot = tf.transformations.quaternion_from_euler(0, 3*np.pi/2, 0)
+
+        f_rot = tf.transformations.quaternion_from_euler(0, 0, 0)
         s_rot = tf.transformations.quaternion_from_euler(0, 0, np.pi)
-        f_mul = tf.transformations.quaternion_multiply(ori, f_rot)
+        f_mul = tf.transformations.quaternion_multiply(ori, s_rot)
         s_mul = tf.transformations.quaternion_multiply(f_mul, s_rot) 
-        choice = ori
+
+        if z_axis > 0:
+            print('ROTATED QUAT')
+            print('ROTATED QUAT')
+            print('ROTATED QUAT')
+            print('ROTATED QUAT')
+            choice = f_mul
+        else:
+            choice = ori
+            print('ORIIIIIIIIIIIIIIIIII')
+
+
         pp.pose.orientation.x = choice[0] 
         pp.pose.orientation.y = choice[1] 
         pp.pose.orientation.z = choice[2] 

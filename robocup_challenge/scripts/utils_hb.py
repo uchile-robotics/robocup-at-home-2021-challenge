@@ -95,8 +95,11 @@ arm = moveit_commander.MoveGroupCommander('arm')
 #arm.allow_replanning(True)
 arm.set_workspace([-3, -3, -1, 3, 3, 5])
 whole_body = moveit_commander.MoveGroupCommander("whole_body_light")
-whole_body.allow_replanning(True)
+#whole_body.allow_replanning(True)
 whole_body.set_workspace([-9.0, -9.0, 9.0, 9.0])
+whole_body.set_planning_time(20)
+whole_body.set_num_planning_attempts(10)
+whole_body.set_planner_id('TRRTkConfigDefault')
 
 def move_arm_ik(x, y, z, roll, pitch, yaw):
 

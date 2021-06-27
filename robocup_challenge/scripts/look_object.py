@@ -89,20 +89,20 @@ class GetCloseObject(smach.State):
             print(map_pose)
 
             utils_hb.rviz_marker('map', map_pose.pose.position.x, map_pose.pose.position.y, map_pose.pose.position.z)
-            grab_x = map_pose.pose.position.x + 0.1
+            grab_x = map_pose.pose.position.x 
             grab_y = map_pose.pose.position.y - 0.9
-
             if grab_y + 0.9 > 1.6 and map_pose.pose.position.z < 0.8:
                 userdata.floor = True
-
             print(grab_x)
             print(grab_y)
             m = utils_hb.Move()
             m.set_pose(grab_x, grab_y, 90)
+
+
             #m.get_pose()
             m.go()
             utils_hb.move_head_tilt(-0.8)
-            rospy.sleep(7.)
+            rospy.sleep(0.1)
         except:
             rospy.logerr('fail to move')
             sys.exit()

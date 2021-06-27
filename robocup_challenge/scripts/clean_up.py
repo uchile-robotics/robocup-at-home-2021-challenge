@@ -42,7 +42,7 @@ class CheckTime(smach.State):
         actual_time = rospy.get_time()
         delta = actual_time - userdata.timer
         print('It has been {} seconds'.format(delta))
-        if delta > 300:
+        if delta > 60*15:
             return 'finish'
         return 'continue'
 
@@ -145,25 +145,25 @@ class GoToGoal(smach.State):
 
         if object_p in self.food_items:
             _class = 'food_items'
-            drop_poses = [[1.9, 0.0, -90],
-                    [1.7, 0.0, -90],
-                    [1.5, 0.0, -90]]
+            drop_poses = [[1.85, 0.0, -90],
+                    [1.65, 0.0, -90],
+                    [1.45, 0.0, -90]]
             drop_pose = drop_poses[userdata.drop_counter]
             userdata.drop_counter += 1
             if userdata.drop_counter > 2:
                 userdata.drop_counter = 0
         elif object_p in self.kitchen_items:
             _class = 'kitchen_items'
-            drop_pose = [2.4, 0.0, -90]
+            drop_pose = [0.95, -0.03, -90]
         elif object_p in self.tool_items:
             _class = 'tool_items'
             drop_pose = [2.4, 0.0, -90]
         elif object_p in self.shape_items:
             _class = 'shape_items'
-            drop_pose = [2.4, 0.0, -90]
+            drop_pose = [2.82, 0.0, -90]
         elif object_p in self.task_items:
             _class = 'task_items'
-            drop_pose = [2.4, 0.0, -90]
+            drop_pose = [2.82, 0.0, -90]
         else:
             _class = 'other_items'
             drop_pose = [2.4, 0.0, -90]
@@ -188,6 +188,8 @@ class SetPose(smach.State):
     def __init__(self, vision_model):
         smach.State.__init__(self, outcomes=["succeeded", "failed", 'ban', 'retry'], io_keys=['object_pose', 'grab_pose', 'selected_object', 'pre_pose', 'width', 'gpd_tries', 'ban_list'])
         self.vision_model = vision_model
+        self.pre_pose_pub = rospy.Publisher("/pre_nico", PoseStamped, queue_size=5)
+        self.pose_pub = rospy.Publisher("/nico", PoseStamped, queue_size=5)
     def execute(self,userdata):
         utils_hb.move_arm_init()
         
@@ -231,9 +233,7 @@ class SetPose(smach.State):
             print(best_pose)
             print('score: {}'.format(score))
 
-            # preparar mano
-            utils_hb.move_arm_neutral()
-
+           
             # check pose erronea en camara
             if best_pose.pose.position.z > 0.8:
                 print('pose en camara')
@@ -260,13 +260,13 @@ class SetPose(smach.State):
             print(userdata.pre_pose)  
             print('BBBBBBBBBBBBB')         
 
-            pose_pub = rospy.Publisher("/pre_nico", PoseStamped, queue_size=5)
-            rospy.sleep(1)
-            pose_pub.publish(userdata.pre_pose)
+            self.pre_pose_pub.publish(userdata.pre_pose)
 
-            pose_pub = rospy.Publisher("/nico", PoseStamped, queue_size=5)
-            rospy.sleep(1)
-            pose_pub.publish(userdata.grab_pose)
+            self.pose_pub.publish(userdata.grab_pose)
+
+            # preparar mano
+            utils_hb.move_arm_neutral()
+
 
             #assert(0==1)
 

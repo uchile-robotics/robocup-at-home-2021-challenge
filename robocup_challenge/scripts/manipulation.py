@@ -22,7 +22,17 @@ from moveit_msgs.msg import (
     PlannerInterfaceDescription,
     MotionPlanRequest,
 )
+class PrePreGrasp(smach.State):
+    def __init__(self, open=True):
+        smach.State.__init__(self, outcomes=["succeeded"], input_keys=["pre_pose", 'width'])
+        self.open = open
+    def execute(self, userdata):
 
+        init_joints = [0.1, -1.6, 0.0, -0.4, 0.0, 0.0]
+        utils_hb.arm.set_joint_value_target(init_joints)
+        utils_hb.arm.go()
+
+        return "succeeded"
 
 class PreGrasp(smach.State):
     def __init__(self, open=True):
@@ -30,13 +40,6 @@ class PreGrasp(smach.State):
         self.open = open
     def execute(self, userdata):
         #Robot movement to pregrasping by IK
-        #constraints = TrajectoryConstraints()
-        #constraints.constraints[0].joint_constraints[0].joint_name = 'arm_roll_joint'
-        #constraints.constraints[0].joint_constraints[0].position = 0
-        #constraints.constraints[0].joint_constraints[0].tolerance_above = 0.2
-        #constraints.constraints[0].joint_constraints[0].tolerance_below = -0.2
-
-        #utils_hb.whole_body.set_trajectory_constraints(constraints)
         if self.open:
             utils_hb.move_hand(1)
         utils_hb.whole_body.set_pose_target(userdata.pre_pose)
@@ -62,7 +65,7 @@ class Grasp(smach.State):
         #else:
         w_offset = 0.1
         print('OFFSET: {}'.format(userdata.width.data/0.126))
-        final_width = min(userdata.width.data/0.126 + w_offset, 1.0)
+        final_width = min(userdata.width.data/0.126 + 2*w_offset, 1.0)
         utils_hb.move_hand(final_width)
         utils_hb.whole_body.set_pose_target(userdata.grab_pose)
         utils_hb.whole_body.go()
@@ -123,6 +126,12 @@ def getInstance():
     sm = smach.StateMachine(outcomes=['succeeded', 'failed'], input_keys=['grab_pose', 'pre_pose', 'object_pose', 'width', 'simple_flag'])
 
     with sm:
+
+        smach.StateMachine.add('GO_TO_PREPREGRASP', PrePreGrasp(),
+            transitions={
+                'succeeded': 'GO_TO_PREGRASP'                
+            }
+        )
 
         smach.StateMachine.add('GO_TO_PREGRASP', PreGrasp(),
             transitions={
