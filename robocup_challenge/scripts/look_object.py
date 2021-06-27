@@ -49,7 +49,7 @@ class LookTo(smach.State):
 
 class FindObject(smach.State):
     def __init__(self, vision_model):
-        smach.State.__init__(self, outcomes=["succeeded", "failed", "continue"], io_keys=['counter', 'object_pose', 'selected_object', 'ban_list', 'look_tries'])
+        smach.State.__init__(self, outcomes=["succeeded", "failed", "continue"], io_keys=['counter', 'object_pose', 'selected_object', 'ban_list', 'look_tries', 'forward_counter'])
         self.vision_model = vision_model
     def execute(self,userdata):
         print('Looking For Object')
@@ -72,25 +72,28 @@ class FindObject(smach.State):
         print('Object not found')
         userdata.look_tries += 1
         if userdata.look_tries == 5:
+            userdata.forward_counter += 1
             return 'continue'
+
         return 'failed'
         
 
 class GetCloseObject(smach.State):
-    def __init__(self):
+    def __init__(self, buffer):
         smach.State.__init__(self, outcomes=["succeeded"], input_keys=['object_pose', 'floor'], output_keys=['floor'])
+        self.buffer = buffer
 
     def execute(self,userdata):
         print('Getting Close to Object')
         try:
             # se tiene que usar la pose obtenida por vision
-            map_pose = utils_hb.get_pose_relative_coordinate('map', userdata.object_pose)
+            map_pose = utils_hb.get_pose_relative_coordinate('map', userdata.object_pose, self.buffer)
             print('AAAAAAAAAAAAAAAAAAAAAA')
             print(map_pose)
 
             utils_hb.rviz_marker('map', map_pose.pose.position.x, map_pose.pose.position.y, map_pose.pose.position.z)
             grab_x = map_pose.pose.position.x 
-            grab_y = map_pose.pose.position.y - 0.9
+            grab_y = map_pose.pose.position.y - 0.7
             if grab_y + 0.9 > 1.6 and map_pose.pose.position.z < 0.8:
                 userdata.floor = True
             print(grab_x)
@@ -108,9 +111,9 @@ class GetCloseObject(smach.State):
             sys.exit()
         return 'succeeded'
 
-def getInstance(vision_model):
+def getInstance(vision_model, buffer):
 
-    sm = smach.StateMachine(outcomes=['succeeded', 'failed', 'continue'], input_keys=['object_pose', 'selected_object', 'ban_list', 'floor', 'look_tries'], output_keys=['object_pose', 'selected_object', 'floor', 'look_tries'])
+    sm = smach.StateMachine(outcomes=['succeeded', 'failed', 'continue'], input_keys=['object_pose', 'selected_object', 'ban_list', 'floor', 'look_tries', 'forward_counter'], output_keys=['object_pose', 'selected_object', 'floor', 'look_tries', 'forward_counter'])
     sm.userdata.counter = 0
 
     with sm:
@@ -129,7 +132,7 @@ def getInstance(vision_model):
             }
         )
 
-        smach.StateMachine.add('GET_CLOSE', GetCloseObject(),
+        smach.StateMachine.add('GET_CLOSE', GetCloseObject(buffer),
             transitions={
                 'succeeded': 'succeeded'                
             }

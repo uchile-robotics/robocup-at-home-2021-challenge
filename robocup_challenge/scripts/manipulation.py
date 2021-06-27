@@ -24,11 +24,15 @@ from moveit_msgs.msg import (
 )
 class PrePreGrasp(smach.State):
     def __init__(self, open=True):
-        smach.State.__init__(self, outcomes=["succeeded"], input_keys=["pre_pose", 'width'])
+        smach.State.__init__(self, outcomes=["succeeded"], input_keys=["pre_pose", 'width', 'forward_counter'])
         self.open = open
     def execute(self, userdata):
 
-        init_joints = [0.1, -1.6, 0.0, -0.4, 0.0, 0.0]
+        if userdata.forward_counter > 3:
+            init_joints = [0.3, -1.0, 0.0, -0.4, 0.0, 0.0]
+        else:
+            init_joints = [0.1, -1.6, 0.0, -0.4, 0.0, 0.0]
+            
         utils_hb.arm.set_joint_value_target(init_joints)
         utils_hb.arm.go()
 
@@ -65,11 +69,11 @@ class Grasp(smach.State):
         #else:
         w_offset = 0.1
         print('OFFSET: {}'.format(userdata.width.data/0.126))
-        final_width = min(userdata.width.data/0.126 + 2*w_offset, 1.0)
+        final_width = min(userdata.width.data/0.126 + 1.5*w_offset, 1.0)
         utils_hb.move_hand(final_width)
         utils_hb.whole_body.set_pose_target(userdata.grab_pose)
         utils_hb.whole_body.go()
-        utils_hb.move_hand(max(userdata.width.data/0.126 - 5*w_offset, 0))
+        utils_hb.move_hand(max(userdata.width.data/0.126 - 4*w_offset, 0))
 
         #utils_hb.whole_body.clear_trajectory_constraints()
 
@@ -123,7 +127,7 @@ class GetSafe(smach.State):
             
 def getInstance():
 
-    sm = smach.StateMachine(outcomes=['succeeded', 'failed'], input_keys=['grab_pose', 'pre_pose', 'object_pose', 'width', 'simple_flag'])
+    sm = smach.StateMachine(outcomes=['succeeded', 'failed'], input_keys=['grab_pose', 'pre_pose', 'object_pose', 'width', 'simple_flag', 'forward_counter'])
 
     with sm:
 

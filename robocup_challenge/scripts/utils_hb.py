@@ -71,17 +71,15 @@ def move_head_tilt(v):
 
     head.set_joint_value_target("head_tilt_joint", v)
     return head.go()
-    
-def get_pose_relative_coordinate(targ_frame, p):
 
-    tfBuffer = tf2_ros.Buffer()
-    listener = tf2_ros.TransformListener(tfBuffer)
+
+def get_pose_relative_coordinate(targ_frame, p, buffer):
 
     rate = rospy.Rate(10.0)
 
     while not rospy.is_shutdown():
         try:
-            trans = tfBuffer.transform(p, targ_frame, rospy.Duration(10.0))
+            trans = buffer.transform(p, targ_frame, rospy.Duration(10.0))
             break
         
         except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException):
@@ -99,7 +97,7 @@ whole_body = moveit_commander.MoveGroupCommander("whole_body_light")
 whole_body.set_workspace([-9.0, -9.0, 9.0, 9.0])
 whole_body.set_planning_time(20)
 whole_body.set_num_planning_attempts(10)
-whole_body.set_planner_id('TRRTkConfigDefault')
+whole_body.set_planner_id('BKPIECEkConfigDefault')
 
 def move_arm_ik(x, y, z, roll, pitch, yaw):
 

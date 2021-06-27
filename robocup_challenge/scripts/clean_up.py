@@ -14,6 +14,7 @@ from geometry_msgs.msg import PoseStamped, Quaternion, TransformStamped, Twist, 
 from tf.transformations import euler_from_quaternion, quaternion_from_euler
 from visualization_msgs.msg import Marker
 import copy
+import tf2_ros
 
 import smach_ros
 
@@ -72,14 +73,47 @@ class PanHead(smach.State):
 
 class DropObject(smach.State):
     def __init__(self):
-        smach.State.__init__(self, outcomes=["succeeded"])
+        smach.State.__init__(self, outcomes=["succeeded"], input_keys=['obj_class'])
     def execute(self,userdata):
         wrench_raw = rospy.wait_for_message("/hsrb/wrist_wrench/raw",  WrenchStamped)
         torque_offset = 0.4
-        init_height = 0.43
-        init_joints = [init_height, -2.1, 0.0, 0.4, 0.0, 0]
+
+
+        if userdata.obj_class == 'food_items':
+            init_height = 0.43
+            second_number = -2.1
+
+        elif userdata.obj_class == 'kitchen_items':
+            init_height = 0.5
+            second_number = -1.8
+
+        elif userdata.obj_class == 'tool_items':
+            init_height = 0.43
+            second_number = -2.1
+
+        elif userdata.obj_class == 'shape_items':
+            init_height = 0.43
+            second_number = -2.1
+            
+        elif userdata.obj_class == 'task_items':
+            init_height = 0.43
+            second_number = -2.1
+
+        else:
+            init_height = 0.43
+            second_number = -2.1
+
+        print('init height: {}'.format(init_height))
+        print('second number: {}'.format(second_number))
+
+        init_joints = [init_height, 0.0, 0.0, 0.4, 0.0, 0]
         utils_hb.arm.set_joint_value_target(init_joints)
         utils_hb.arm.go()
+        rospy.sleep(0.1)
+        init_joints = [init_height, second_number, 0.0, 0.4, 0.0, 0]
+        utils_hb.arm.set_joint_value_target(init_joints)
+        utils_hb.arm.go()
+
         rospy.sleep(0.1)
         utils_hb.move_hand(1.0)
         #utils_hb.arm.set_joint_value_target([init_height+0.05, -2.1, 0.0, 0.4, 0.0, 0])
@@ -102,7 +136,7 @@ class DropObject(smach.State):
 
 class MoveSM(smach.State):
     def __init__(self, place):
-        smach.State.__init__(self, outcomes=["succeeded", 'failed'], io_keys=['goal_counter'])
+        smach.State.__init__(self, outcomes=["succeeded", 'failed'], io_keys=['goal_counter', 'forward_counter'])
         self.place = place
 
     def execute(self,userdata):
@@ -110,8 +144,14 @@ class MoveSM(smach.State):
         start = rospy.get_time()
         
         if self.place == 'PICKUP':
-            goal_poses = [[0.8, 0.2, 90, -0.8],
-                        [0.2, 0.2, 90, -0.8]]
+
+            if userdata.forward_counter > 3:
+                y_pos = 0.5
+            else:
+                y_pos = 0.2
+
+            goal_poses = [[0.8, y_pos, 90, -0.8],
+                        [0.2, y_pos, 90, -0.8]]
             goal_pose = goal_poses[userdata.goal_counter]
             try:
                 utils_hb.move_head_tilt(goal_pose[3])
@@ -130,7 +170,7 @@ class MoveSM(smach.State):
 
 class GoToGoal(smach.State):
     def __init__(self):
-        smach.State.__init__(self, outcomes=["succeeded", "failed"], io_keys=['counter', 'object_pose', 'selected_object', 'drop_counter'])
+        smach.State.__init__(self, outcomes=["succeeded", "failed"], io_keys=['counter', 'object_pose', 'selected_object', 'drop_counter', 'obj_class'])
         self.food_items = ["sugar_box","peach","apple","lemon","mustard_bottle","potted_meat_can","gelatin_box","tuna_fish_can","tomato_soup_can","pear","plum","pudding_box","master_chef_can","orange","banana","strawberry","cracker_box"]
         self.kitchen_items = ["pitcher_base","spatula","knife","mug","skillet_lid","skillet","windex_bottle","fork","spoon","bowl","sponge","plate","cleanser_bottle"]
         self.tool_items = ["marker","power_drill","adjustable_wrench","hammer","padlock","scissors","screwdriver","wood_block","clamps"]
@@ -145,30 +185,31 @@ class GoToGoal(smach.State):
 
         if object_p in self.food_items:
             _class = 'food_items'
-            drop_poses = [[1.85, 0.0, -90],
-                    [1.65, 0.0, -90],
-                    [1.45, 0.0, -90]]
+            drop_poses = [[1.87, 0.0, -90],
+                    [1.67, 0.0, -90],
+                    [1.47, 0.0, -90]]
             drop_pose = drop_poses[userdata.drop_counter]
             userdata.drop_counter += 1
             if userdata.drop_counter > 2:
                 userdata.drop_counter = 0
         elif object_p in self.kitchen_items:
             _class = 'kitchen_items'
-            drop_pose = [0.95, -0.03, -90]
+            drop_pose = [0.98, 0.05, -90]
         elif object_p in self.tool_items:
             _class = 'tool_items'
             drop_pose = [2.4, 0.0, -90]
         elif object_p in self.shape_items:
             _class = 'shape_items'
-            drop_pose = [2.82, 0.0, -90]
+            drop_pose = [2.5, -0.08, -61]
         elif object_p in self.task_items:
             _class = 'task_items'
-            drop_pose = [2.82, 0.0, -90]
+            drop_pose = [2.5, -0.08, -61]
         else:
             _class = 'other_items'
             drop_pose = [2.4, 0.0, -90]
 
         print('Class: {}'.format(_class))
+        sm.userdata.obj_class = _class
 
         # move to goal
         try:
@@ -185,11 +226,13 @@ class GoToGoal(smach.State):
         
 
 class SetPose(smach.State):
-    def __init__(self, vision_model):
+    def __init__(self, vision_model, buffer):
         smach.State.__init__(self, outcomes=["succeeded", "failed", 'ban', 'retry'], io_keys=['object_pose', 'grab_pose', 'selected_object', 'pre_pose', 'width', 'gpd_tries', 'ban_list'])
         self.vision_model = vision_model
         self.pre_pose_pub = rospy.Publisher("/pre_nico", PoseStamped, queue_size=5)
         self.pose_pub = rospy.Publisher("/nico", PoseStamped, queue_size=5)
+        self.buffer = buffer
+
     def execute(self,userdata):
         utils_hb.move_arm_init()
         
@@ -242,8 +285,8 @@ class SetPose(smach.State):
             # transformar a pose para manip
             #best_pose.pose.position.z = best_pose.pose.position.z - 0.09
             try:
-                userdata.grab_pose = utils_hb.get_pose_relative_coordinate('map', best_pose)
-                userdata.pre_pose = utils_hb.get_pose_relative_coordinate('map', pre_grasp)
+                userdata.grab_pose = utils_hb.get_pose_relative_coordinate('map', best_pose, self.buffer)
+                userdata.pre_pose = utils_hb.get_pose_relative_coordinate('map', pre_grasp, self.buffer)
             except: 
                 return 'failed'
             
@@ -285,6 +328,10 @@ def getInstance():
     # Se crea el modelo 
     print('CARGANDO MODELO')
     vis_model = detection.RGBD()
+    
+
+    tfBuffer = tf2_ros.Buffer()
+    listener = tf2_ros.TransformListener(tfBuffer) 
 
     sm = smach.StateMachine(outcomes=['succeeded', 'aborted', 'finish'])
 
@@ -302,6 +349,8 @@ def getInstance():
     sm.userdata.simple_flag = True
     sm.userdata.front_flag = False
     sm.userdata.floor = False
+    sm.userdata.obj_class = ''
+    sm.userdata.forward_counter = 0
 
     with sm:
 
@@ -346,7 +395,7 @@ def getInstance():
             }
         )
 
-        smach.StateMachine.add('LOOK_OBJECT', look_object.getInstance(vis_model),
+        smach.StateMachine.add('LOOK_OBJECT', look_object.getInstance(vis_model, tfBuffer),
             transitions={
                 'succeeded': 'CT5', 
                 'failed': 'CT2', 
@@ -361,7 +410,7 @@ def getInstance():
             }
         )
 
-        smach.StateMachine.add('GET_POSE', SetPose(vis_model),
+        smach.StateMachine.add('GET_POSE', SetPose(vis_model, tfBuffer),
             transitions={
                 'succeeded': 'CT3',
                 'failed': 'RESET',
@@ -408,6 +457,7 @@ def getInstance():
 
 if __name__ == '__main__':
 
+    # INIT
     rospy.init_node('CLEANUP')
 
     sm = getInstance()
